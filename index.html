@@ -57,6 +57,17 @@ body{
 }
 .nameBtn:active{transform:scale(.95)}
 .nameCol{display:grid;gap:13px;width:100%;max-width:280px}
+.storyCol{display:grid;gap:16px;width:100%;max-width:320px}
+.storyBtn{background:rgba(255,255,255,.95);border:none;border-radius:22px;padding:0;overflow:hidden;
+  box-shadow:0 6px 0 rgba(0,0,0,.13);transition:transform .12s;font-family:inherit;text-align:left;width:100%}
+.storyBtn:active{transform:scale(.96)}
+.storyBtn .thumb{height:120px;background-size:cover;background-position:center;display:flex;align-items:flex-end;position:relative;overflow:hidden}
+.storyBtn .thumb .badge2{position:relative;z-index:2;margin:0 0 8px 10px;background:rgba(255,255,255,.92);border-radius:999px;
+  font-size:11px;font-weight:700;color:#3B4A55;padding:4px 10px}
+.storyBtn .lab{padding:12px 15px 14px}
+.storyBtn .lab b{display:block;font-size:19px;font-weight:600;color:#2E3A44}
+.storyBtn .lab span{font-size:13px;color:#7C8A93}
+
 .palPreview{width:120px;height:132px;margin-bottom:14px}
 
 /* ============ STORY ============ */
@@ -71,6 +82,7 @@ body{
 @keyframes brz{0%,100%{transform:scale(1,1)}50%{transform:scale(1.022,.986)}}
 
 #bgRoom{position:absolute;inset:0;opacity:0;transition:opacity .45s}
+#bgPlate{position:absolute;inset:0;opacity:0;transition:opacity .5s;background-size:cover;background-position:center bottom}
 #layer{position:absolute;inset:0;transition:opacity .34s}
 .it{position:absolute;pointer-events:none}
 .it.fade{animation:itFade .55s ease both}
@@ -96,6 +108,10 @@ body{
 .cheer{animation:cheer .7s ease-in-out infinite;transform-origin:50% 100%}
 @keyframes cheer{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-13px) rotate(4deg)}}
 .spin{animation:spin 9s linear infinite;transform-origin:50% 50%}
+.washOut{animation:washOut .9s cubic-bezier(.5,0,.8,.6) forwards}
+@keyframes washOut{to{transform:translateY(230px) rotate(220deg);opacity:0}}
+.climbUp{animation:climbUp 1.9s cubic-bezier(.5,0,.4,1) forwards}
+@keyframes climbUp{from{transform:translateY(0)}to{transform:translateY(-190px)}}
 @keyframes spin{to{transform:rotate(360deg)}}
 .float{animation:floatUp 3.4s ease-in-out infinite}
 @keyframes floatUp{0%,100%{transform:translateY(0) rotate(-8deg)}50%{transform:translateY(-22px) rotate(8deg)}}
@@ -177,6 +193,14 @@ body{
     <button class="linkish" id="resetBtn" style="display:none">Start over (clear Bobo’s words)</button>
   </section>
 
+
+  <!-- ================= PICK STORY ================= -->
+  <section class="screen" id="sStory0">
+    <div class="pickWrap">
+      <div class="pickTitle">Which story<br>shall we read?</div>
+      <div class="storyCol" id="storyCol"></div>
+    </div>
+  </section>
   <!-- ================= PICK ANIMAL ================= -->
   <section class="screen" id="sPick">
     <div class="pickWrap">
@@ -199,6 +223,7 @@ body{
     <div id="stage">
       <div id="bgArt"></div>
       <div id="bgRoom"></div>
+      <div id="bgPlate"></div>
       <div id="layer"></div>
       <button id="bookBtn"><span>📖</span><span id="bookCount">0</span></button>
       <div class="sky" id="sky"></div>
@@ -491,6 +516,34 @@ function noteArt(c){
    '<path d="M20 4 q14 3 14 12 q-4 -7 -14 -7 Z" fill="'+c+'"/></svg>';
 }
 
+/* ---------- story 2: claymation raster art (generated with fal) ---------- */
+const IMG = (f, extra) => '<img src="art/'+f+'" alt="" draggable="false" style="width:100%;height:auto;display:block'+(extra||'')+'">';
+const CLAY = {
+  spider:  IMG('spider-happy.png'),
+  climb:   IMG('spider-climb.png'),
+  wet:     IMG('spider-wet.png'),
+  cheer:   IMG('spider-cheer.png'),
+  sun:     IMG('sun.png'),
+  cloud:   IMG('cloud.png'),
+  rain:    IMG('rain.png'),
+  rainbow: IMG('rainbow.png'),
+  web:     IMG('web.png'),
+  spout:   IMG('spout.png'),
+  pal: {bunny:IMG('pal-bunny.png'), bear:IMG('pal-bear.png'), duck:IMG('pal-duck.png'), cat:IMG('pal-cat.png')}
+};
+const PLATE = {
+  sunny:'art/bg/bg-sunny.jpg', clouds:'art/bg/bg-clouds.jpg', rain:'art/bg/bg-rain.jpg',
+  sunout:'art/bg/bg-sunout.jpg', rainbow:'art/bg/bg-rainbow.jpg'
+};
+function arrowArt(dir){
+  const up = dir === 'up';
+  return '<svg viewBox="0 0 80 110"><defs><linearGradient id="ar'+dir+'" x1="0" y1="0" x2="0" y2="1">'+
+   '<stop offset="0%" stop-color="#F2C14E"/><stop offset="100%" stop-color="#E2894C"/></linearGradient></defs>'+
+   '<g transform="'+(up?'':'rotate(180 40 55)')+'">'+
+   '<path d="M40 6 L74 46 H56 V104 H24 V46 H6 Z" fill="url(#ar'+dir+')" stroke="#B9702F" stroke-width="3" stroke-linejoin="round"/>'+
+   '</g></svg>';
+}
+
 const _ARTSRC = {
   bunny:critter('bunny'), bear:critter('bear'), duck:critter('duck'), cat:critter('cat'),
   pig:pigArt(), wolf:wolfArt(),
@@ -517,7 +570,7 @@ Object.keys(_ARTSRC).forEach(k => Object.defineProperty(ART, k, {
 /* ============================================================
    WORDS  (7 knowledge cards)
    ============================================================ */
-const WORDS = {
+const WORD_PIGS = {
   pig:     {en:'pig',     es:'el cerdito',    art:'pig',
             reveal:"It's a little pig!",                      reveal2:"That was a pig. I will remember!"},
   straw:   {en:'straw',   es:'la paja',       art:'straw',
@@ -533,7 +586,9 @@ const WORDS = {
   pot:     {en:'pot',     es:'la olla',       art:'pot',
             reveal:"It's a big hot pot!",                     reveal2:"A pot. I will remember that!"}
 };
-const WORD_ORDER = ['pig','straw','sticks','bricks','wolf','chimney','pot'];
+
+let WORDS = WORD_PIGS;
+const wordOrder = () => Object.keys(WORDS);
 
 const ANIMALS = {
   bunny:{label:'Bunny', names:['Bobo','Nibbles','Pip']},
@@ -593,8 +648,12 @@ function allSpeech(){
     if(t.indexOf('{n}') >= 0) names.forEach(n => add(t.replace('{n}', n), v));
     else add(t, v);
   });
-  Object.keys(WORDS).forEach(k => {
-    const w = WORDS[k];
+  Object.keys(SPIDER_LINES).forEach(k => add(SPIDER_LINES[k], SPIDER_VOICE[k] || 'narr'));
+  const ALLW = {};
+  Object.keys(WORD_PIGS).forEach(k => ALLW[k] = WORD_PIGS[k]);
+  Object.keys(WORD_SPIDER).forEach(k => ALLW[k] = WORD_SPIDER[k]);
+  Object.keys(ALLW).forEach(k => {
+    const w = ALLW[k];
     add(w.reveal, 'slow');
     add(w.reveal2, 'pal');
     add('Your turn! Can you say ' + w.en + '?', 'pal');
@@ -723,9 +782,13 @@ function playClip(file){
    ============================================================ */
 const $ = id => document.getElementById(id);
 const LS = 'boboPoc.v1';
-let S = {pal:'bunny', name:'Bobo', learned:[]};
+let S = {pal:'bunny', name:'Bobo', learned:{}};
 try{ const raw = localStorage.getItem(LS); if(raw) S = Object.assign(S, JSON.parse(raw)); }catch(e){}
 const save = () => { try{ localStorage.setItem(LS, JSON.stringify(S)); }catch(e){} };
+if(Array.isArray(S.learned)) S.learned = {pigs:S.learned};   // migrate the old single-story save
+if(!S.learned || typeof S.learned !== 'object') S.learned = {};
+function learned(){ if(!S.learned[STORY]) S.learned[STORY] = []; return S.learned[STORY]; }
+function totalLearned(){ return Object.keys(S.learned).reduce((a,k)=>a+(S.learned[k]||[]).length, 0); }
 
 let stopFlag = false, skipFlag = false;
 
@@ -878,6 +941,12 @@ async function shot(spec){
   L().style.opacity = '0';
   await wait(300);
   if(stopFlag) return;
+  if(spec.plate){
+    $('bgPlate').style.backgroundImage = 'url(' + spec.plate + ')';
+    $('bgPlate').style.opacity = '1';
+  } else {
+    $('bgPlate').style.opacity = '0';
+  }
   $('bgRoom').style.opacity = spec.bg === 'room' ? '1' : '0';
   if(spec.sky !== undefined) $('sky').classList.toggle('night', !!spec.sky);
   paint(spec.items || []);
@@ -911,7 +980,8 @@ function flyCardToBook(){
   const card = document.createElement('div');
   card.className = 'flyCard';
   const w = WORDS[flyCardToBook.key] || WORDS.pig;
-  card.innerHTML = ART[w.art];
+  card.innerHTML = (w.art === 'up' || w.art === 'down') ? arrowArt(w.art)
+                   : (STORY === 'spider' && CLAY[w.art]) ? CLAY[w.art] : ART[w.art];
   const from = $('wordPic').getBoundingClientRect();
   const to   = $('bookBtn').getBoundingClientRect();
   card.style.left = (from.left + from.width/2 - 41) + 'px';
@@ -931,7 +1001,8 @@ async function wordMoment(key){
   if(stopFlag) return;
   const w = WORDS[key];
   flyCardToBook.key = key;
-  $('wordPic').innerHTML = ART[w.art];
+  $('wordPic').innerHTML = (w.art === 'up' || w.art === 'down') ? arrowArt(w.art)
+                          : (STORY === 'spider' && CLAY[w.art]) ? CLAY[w.art] : ART[w.art];
   $('wordText').textContent = w.en;
   $('wordEs').textContent = '';
   $('wordYay').textContent = ''; $('wordYay').classList.remove('in');
@@ -966,8 +1037,8 @@ async function wordMoment(key){
   if(stopFlag) return;
   await speak('In Spanish, we say ' + w.es + '.', V.slow);
 
-  if(S.learned.indexOf(key) < 0){ S.learned.push(key); save(); }
-  $('bookCount').textContent = S.learned.length;
+  if(learned().indexOf(key) < 0){ learned().push(key); save(); }
+  $('bookCount').textContent = learned().length;
   flyCardToBook();
   await wait(680);
   $('wordCard').classList.remove('in');
@@ -999,9 +1070,9 @@ async function blowMoment(targetId){
 /* =========================================================
    THE STORY — beats, each with its own shot
    ========================================================= */
-async function runStory(){
+async function runPigs(){
   stopFlag = false;
-  $('bookCount').textContent = S.learned.length;
+  $('bookCount').textContent = learned().length;
   const N = S.name;
 
   /* ---- 1. wide meadow, the three pigs ---- */
@@ -1174,6 +1245,219 @@ async function runStory(){
   openBook();
 }
 
+/* =========================================================
+   STORY 2 — Itsy Bitsy Spider (claymation)
+   ========================================================= */
+const WORD_SPIDER = {
+  spider:  {en:'spider',  es:'la araña',    art:'spider',
+            reveal:"That's a little spider!",            reveal2:"A spider. I will remember that!"},
+  spout:   {en:'spout',   es:'el canalón',  art:'spout',
+            reveal:"That is the water spout, a big metal pipe.", reveal2:"A spout. I will remember that!"},
+  up:      {en:'up',      es:'arriba',      art:'up',
+            reveal:"She is going up, up, up!",           reveal2:"Up. I will remember that!"},
+  cloud:   {en:'cloud',   es:'la nube',     art:'cloud',
+            reveal:"That's a big grey rain cloud.",      reveal2:"A cloud. I will remember that!"},
+  rain:    {en:'rain',    es:'la lluvia',   art:'rain',
+            reveal:"That's the rain, falling down.",     reveal2:"Rain. I will remember that!"},
+  down:    {en:'down',    es:'abajo',       art:'down',
+            reveal:"Oh no, she washed all the way down!",reveal2:"Down. I will remember that!"},
+  sun:     {en:'sun',     es:'el sol',      art:'sun',
+            reveal:"Here comes the warm yellow sun!",    reveal2:"The sun. I will remember that!"},
+  web:     {en:'web',     es:'la telaraña', art:'web',
+            reveal:"She made a beautiful spider web.",   reveal2:"A web. I will remember that!"},
+  rainbow: {en:'rainbow', es:'el arcoíris', art:'rainbow',
+            reveal:"Look, a rainbow in the sky!",        reveal2:"A rainbow. I will remember that!"}
+};
+const SPIDER_LINES = {
+  sGreet:"Hello again! This one is my favourite. Will you help me learn?",
+  sOpen:"In a sunny little garden, there lived an itsy bitsy spider.",
+  sSpout:"Beside the wall stood a tall metal water spout.",
+  sWant:"The itsy bitsy spider wanted to climb all the way to the top.",
+  sClimb:"The itsy bitsy spider climbed up the water spout.",
+  sCloud:"But high above, the sky began to fill with big grey clouds.",
+  sRainCame:"Down came the rain, and washed the spider out!",
+  sDown:"Poor itsy bitsy spider. She was all the way back down, and very very wet.",
+  sBlow:"Can you help? Blow the rain clouds away! Blow into the phone!",
+  sBlewY:"You did it! The clouds went whooshing away!",
+  sBlewN:"And slowly, the clouds went whooshing away.",
+  sSunCame:"Out came the sun, and dried up all the rain!",
+  sDry:"The spider shook herself off. She was warm and dry again.",
+  sAgain:"And the itsy bitsy spider climbed up the spout again!",
+  sTop:"Up and up and up, all the way to the very top!",
+  sWeb:"And there, in the sunshine, she made a beautiful silver web.",
+  sEnd:"The itsy bitsy spider never ever gave up. The end!",
+  sThanks:"You taught me so many words today! Thank you!"
+};
+const SPIDER_VOICE = {sGreet:'pal', sThanks:'pal', sBlow:'pal', sBlewY:'pal'};
+
+async function runSpider(){
+  stopFlag = false;
+  WORDS = WORD_SPIDER;
+  $('bookCount').textContent = learned().length;
+  Music.mood('happy');
+  const P = k => Object.assign({a:CLAY.pal[S.pal], cls:'pal', anim:'rise', id:'pal'}, k);
+
+  /* 1 — sunny garden, meet the spider */
+  await shot({plate:PLATE.sunny, sky:false, items:[
+    {a:CLAY.spider, l:'16%', b:'11%', w:120, cls:'brz', anim:'pop', z:4},
+    P({r:'6%', b:'4%', w:104, z:5})
+  ]});
+  await line(SPIDER_LINES.sGreet, V.pal);
+  if(stopFlag) return;
+  await line(SPIDER_LINES.sOpen, V.narr);
+  if(stopFlag) return;
+  await wordMoment('spider');
+  if(stopFlag) return;
+
+  /* 2 — the spout */
+  await shot({plate:PLATE.sunny, sky:false, items:[
+    {a:CLAY.spider, l:'8%', b:'8%', w:104, cls:'brz', z:4},
+    P({r:'5%', b:'4%', w:98, z:5})
+  ]});
+  await line(SPIDER_LINES.sSpout, V.narr);
+  if(stopFlag) return;
+  await wordMoment('spout');
+  if(stopFlag) return;
+  await line(SPIDER_LINES.sWant, V.narr);
+  if(stopFlag) return;
+
+  /* 3 — climbing up */
+  await shot({plate:PLATE.sunny, sky:false, items:[
+    {a:CLAY.climb, l:'50%', ml:-46, b:'42%', w:92, anim:'rise', z:4, id:'spiderUp'},
+    P({r:'6%', b:'4%', w:96, z:5})
+  ]});
+  await line(SPIDER_LINES.sClimb, V.narr);
+  if(stopFlag) return;
+  await wordMoment('up');
+  if(stopFlag) return;
+
+  /* 4 — clouds gather */
+  Music.mood('tense');
+  await shot({plate:PLATE.clouds, sky:false, items:[
+    {a:CLAY.cloud, l:'8%', b:'70%', w:120, cls:'float', anim:'slideL', z:3},
+    {a:CLAY.climb, l:'50%', ml:-46, b:'50%', w:92, z:4},
+    P({r:'6%', b:'4%', w:96, z:5})
+  ]});
+  await line(SPIDER_LINES.sCloud, V.narr);
+  if(stopFlag) return;
+  await wordMoment('cloud');
+  if(stopFlag) return;
+
+  /* 5 — down came the rain */
+  await shot({plate:PLATE.rain, sky:false, items:[
+    {a:CLAY.rain, l:'20%', b:'56%', w:88, cls:'float', anim:'fade', z:3},
+    {a:CLAY.rain, r:'18%', b:'64%', w:70, cls:'float', anim:'fade', d:200, z:3},
+    {a:CLAY.climb, l:'50%', ml:-46, b:'48%', w:92, z:4, id:'spiderSlip'},
+    P({r:'6%', b:'4%', w:96, z:5})
+  ]});
+  await wordMoment('rain');
+  if(stopFlag) return;
+  await line(SPIDER_LINES.sRainCame, V.narr);
+  if(el('spiderSlip')) el('spiderSlip').classList.add('washOut');
+  await wait(900);
+  if(stopFlag) return;
+
+  /* 6 — washed all the way down */
+  await shot({plate:PLATE.rain, sky:false, items:[
+    {a:CLAY.wet, l:'50%', ml:-56, b:'7%', w:112, anim:'fade', z:4},
+    P({r:'6%', b:'4%', w:96, z:5})
+  ]});
+  await line(SPIDER_LINES.sDown, V.narr);
+  if(stopFlag) return;
+  await wordMoment('down');
+  if(stopFlag) return;
+
+  /* 7 — blow the clouds away */
+  narrate('Blow into the phone! 💨');
+  if(el('pal')) el('pal').firstChild.classList.add('excited');
+  await speak(SPIDER_LINES.sBlow, V.pal);
+  if(stopFlag) return;
+  const blew = await listenForVoice(6000, {needMs:200, gain:2.2, floor:.055});
+  addItems([{a:ART.puff, l:'6%', b:'62%', w:150, anim:'slideL', z:8, id:'puffS'}]);
+  await wait(500);
+  if(el('puffS')) el('puffS').remove();
+  if(el('pal')) el('pal').firstChild.classList.remove('excited');
+  await speak(blew ? SPIDER_LINES.sBlewY : SPIDER_LINES.sBlewN, V.pal);
+  if(stopFlag) return;
+
+  /* 8 — out came the sun */
+  Music.mood('happy');
+  await shot({plate:PLATE.sunout, sky:false, items:[
+    {a:CLAY.sun, r:'8%', b:'68%', w:116, cls:'spin', anim:'pop', z:3},
+    {a:CLAY.wet, l:'50%', ml:-52, b:'7%', w:104, z:4},
+    P({r:'6%', b:'4%', w:96, z:5})
+  ]});
+  await line(SPIDER_LINES.sSunCame, V.narr);
+  if(stopFlag) return;
+  await wordMoment('sun');
+  if(stopFlag) return;
+  await line(SPIDER_LINES.sDry, V.narr);
+  if(stopFlag) return;
+
+  /* 9 — up again, all the way to the top */
+  await shot({plate:PLATE.sunout, sky:false, items:[
+    {a:CLAY.sun, r:'8%', b:'68%', w:100, cls:'spin', z:3},
+    {a:CLAY.climb, l:'50%', ml:-44, b:'20%', w:88, anim:'rise', z:4, id:'spiderUp2'},
+    P({r:'6%', b:'4%', w:96, z:5})
+  ]});
+  await line(SPIDER_LINES.sAgain, V.narr);
+  if(el('spiderUp2')) el('spiderUp2').firstChild.classList.add('climbUp');
+  await wait(1900);
+  if(stopFlag) return;
+  await line(SPIDER_LINES.sTop, V.narr);
+  if(stopFlag) return;
+
+  /* 10 — web and rainbow */
+  await shot({plate:PLATE.rainbow, sky:false, items:[
+    {a:CLAY.web, l:'50%', ml:-72, b:'40%', w:144, anim:'pop', z:3},
+    {a:CLAY.cheer, l:'50%', ml:-48, b:'46%', w:96, cls:'cheer', anim:'pop', d:300, z:4},
+    P({l:'8%', b:'4%', w:96, z:5})
+  ]});
+  await line(SPIDER_LINES.sWeb, V.narr);
+  if(stopFlag) return;
+  await wordMoment('web');
+  if(stopFlag) return;
+  await wordMoment('rainbow');
+  if(stopFlag) return;
+  await line(SPIDER_LINES.sEnd, V.narr);
+  if(stopFlag) return;
+  await line(SPIDER_LINES.sThanks, V.pal);
+  if(stopFlag) return;
+  openBook();
+}
+
+const STORIES = {
+  pigs:   {title:'The Three Little Pigs', sub:'7 words to teach',       thumb:'',                      words:WORD_PIGS,   run:runPigs},
+  spider: {title:'Itsy Bitsy Spider',     sub:'9 words · claymation',   thumb:'art/bg/bg-rainbow.jpg', words:WORD_SPIDER, run:runSpider}
+};
+let STORY = 'pigs';
+function buildStoryPicker(){
+  const c = $('storyCol'); c.innerHTML = '';
+  Object.keys(STORIES).forEach(k => {
+    const st = STORIES[k], done = (S.learned[k] || []).length, all = Object.keys(st.words).length;
+    const b = document.createElement('button');
+    b.className = 'storyBtn';
+    b.innerHTML =
+      '<div class="thumb" style="'+(st.thumb ? 'background-image:url('+st.thumb+');background-position:center top' : 'background:linear-gradient(#8ECBE6 0%,#C6E7F6 52%,#A8D98E 52%,#8FC978 100%)')+'">'+
+        (st.thumb ? '' :
+          '<div style="position:absolute;inset:0;pointer-events:none">'+
+          '<div style="position:absolute;left:4%;bottom:6%;width:52px">'+ART.straw+'</div>'+
+          '<div style="position:absolute;left:36%;bottom:6%;width:52px">'+ART.sticks+'</div>'+
+          '<div style="position:absolute;right:4%;bottom:6%;width:52px">'+ART.bricks+'</div>'+
+          '<div style="position:absolute;left:26%;bottom:2%;width:30px">'+ART.pig+'</div>'+
+          '<div style="position:absolute;right:26%;bottom:2%;width:34px">'+ART.wolf+'</div></div>')+
+        '<span class="badge2">'+done+' / '+all+' words</span></div>'+
+      '<div class="lab"><b>'+st.title+'</b><span>'+st.sub+'</span></div>';
+    b.onclick = () => {
+      STORY = k; WORDS = st.words;
+      buildAnimalGrid(); goTo('sPick');
+      speak('Who wants to come with you today?', V.pal);
+    };
+    c.appendChild(b);
+  });
+}
+function runActive(){ initStage(); goTo('sStory'); STORIES[STORY].run(); }
+
 /* ============================================================
    BOOK
    ============================================================ */
@@ -1182,10 +1466,10 @@ function openBook(){
   try{ speechSynthesis.cancel(); }catch(e){}
   $('bookPal').innerHTML = ART[S.pal];
   $('bookTitle').textContent = S.name + '’s Word Book';
-  $('bookSub').textContent = S.learned.length + ' of ' + WORD_ORDER.length + ' words learned · tap to hear again';
+  $('bookSub').textContent = learned().length + ' of ' + wordOrder().length + ' words learned · tap to hear again';
   const g = $('cardGrid'); g.innerHTML = '';
-  WORD_ORDER.forEach(k => {
-    const w = WORDS[k], got = S.learned.indexOf(k) >= 0;
+  wordOrder().forEach(k => {
+    const w = WORDS[k], got = learned().indexOf(k) >= 0;
     const b = document.createElement('button');
     b.className = 'kc' + (got ? '' : ' locked');
     b.innerHTML = (got ? ART[w.art] : '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="15" fill="#E4DBC8"/><text x="20" y="27" text-anchor="middle" font-size="19" fill="#BCAF98">?</text></svg>')
@@ -1227,11 +1511,9 @@ function buildNameScreen(){
     b.className = 'nameBtn'; b.textContent = n;
     b.onclick = async () => {
       S.name = n; save();
-      initStage();
-      goTo('sStory');
       narrate('…');
-      await speak('Hooray! My name is ' + n + '!', {pitch:1.55, rate:.9});
-      runStory();
+      runActive();
+      await speak('Hooray! My name is ' + n + '!', V.pal);
     };
     c.appendChild(b);
   });
@@ -1241,7 +1523,7 @@ function buildNameScreen(){
    BOOT
    ============================================================ */
 $('titlePal').innerHTML = ART[S.pal];
-if(S.learned.length) $('resetBtn').style.display = 'block';
+if(totalLearned()) $('resetBtn').style.display = 'block';
 
 $('startBtn').onclick = async () => {
   // unlock audio inside the user gesture (iOS requirement)
@@ -1251,22 +1533,22 @@ $('startBtn').onclick = async () => {
   Music.start();   // audio contexts may only start from a gesture
   loadAudio();
   initStage();
-  buildAnimalGrid();
-  goTo('sPick');
-  speak('Who wants to come with you today?', {rate:.86});
+  buildStoryPicker();
+  goTo('sStory0');
 };
 $('resetBtn').onclick = () => {
-  S.learned = []; save();
+  S.learned = {}; save();
   $('resetBtn').style.display = 'none';
   alert('Cleared — Bobo has forgotten all the words.');
 };
 $('bookBtn').onclick = openBook;
-$('againBtn').onclick = () => { initStage(); goTo('sStory'); runStory(); };
+$('againBtn').onclick = () => { runActive(); };
 $('homeBtn').onclick = () => {
   stopFlag = true;
   try{ speechSynthesis.cancel(); }catch(e){}
   $('titlePal').innerHTML = ART[S.pal];
-  if(S.learned.length) $('resetBtn').style.display = 'block';
+  if(totalLearned()) $('resetBtn').style.display = 'block';
+  buildStoryPicker();
   goTo('sTitle');
 };
 $('skip').onclick = () => {

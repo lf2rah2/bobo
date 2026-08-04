@@ -1,0 +1,22 @@
+{
+ "images": 21,
+ "usd": 0.658,
+ "log": [
+  {
+   "what": "style test",
+   "n": 2
+  },
+  {
+   "what": "portrait test",
+   "n": 2
+  },
+  {
+   "what": "batch",
+   "n": 17
+  },
+  {
+   "what": "matte",
+   "n": 14
+  }
+ ]
+}
