@@ -70,34 +70,40 @@ body{
 .brz{animation:brz 3.4s ease-in-out infinite;transform-origin:50% 100%}
 @keyframes brz{0%,100%{transform:scale(1,1)}50%{transform:scale(1.022,.986)}}
 
-.obj{position:absolute;opacity:0;transform:translateY(10px);transition:opacity .55s,transform .55s cubic-bezier(.34,1.5,.64,1);pointer-events:none}
-.obj.on{opacity:1;transform:none}
-.obj.blown{opacity:0!important;transform:translateX(120px) rotate(52deg) scale(.5)!important;transition:.85s cubic-bezier(.4,0,.7,1)}
-@keyframes palHop{
-  0%{transform:translateY(0) scale(1,1)}
-  10%{transform:translateY(1px) scale(1.09,.91)}
-  28%{transform:translateY(-17px) scale(.94,1.09)}
-  48%{transform:translateY(-21px) scale(1,1)}
-  68%{transform:translateY(1px) scale(1.11,.89)}
-  84%{transform:translateY(0) scale(.98,1.03)}
-  100%{transform:translateY(0) scale(1,1)}
-}
-@keyframes earLag{
-  0%,100%{transform:rotate(0deg)}
-  28%{transform:rotate(-12deg)}
-  52%{transform:rotate(4deg)}
-  74%{transform:rotate(9deg)}
-}
-.shake{animation:shk .3s ease-in-out 6}
-@keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
-.glow{filter:drop-shadow(0 0 0 rgba(255,220,90,0));animation:glowA 1.1s ease-in-out infinite}
-@keyframes glowA{0%,100%{filter:drop-shadow(0 0 3px rgba(255,220,90,.5))}50%{filter:drop-shadow(0 0 16px rgba(255,220,90,1))}}
+#bgRoom{position:absolute;inset:0;opacity:0;transition:opacity .45s}
+#layer{position:absolute;inset:0;transition:opacity .34s}
+.it{position:absolute;pointer-events:none}
+.it.fade{animation:itFade .55s ease both}
+.it.pop{animation:itPop .6s cubic-bezier(.34,1.56,.64,1) both}
+.it.rise{animation:itRise .6s cubic-bezier(.22,1,.36,1) both}
+.it.slideL{animation:itSlideL .75s cubic-bezier(.22,1,.36,1) both}
+.it.slideR{animation:itSlideR .75s cubic-bezier(.22,1,.36,1) both}
+@keyframes itFade{from{opacity:0}to{opacity:1}}
+@keyframes itPop{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:none}}
+@keyframes itRise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes itSlideL{from{opacity:0;transform:translateX(-70px)}to{opacity:1;transform:none}}
+@keyframes itSlideR{from{opacity:0;transform:translateX(70px)}to{opacity:1;transform:none}}
+.blown{animation:blowAway .9s cubic-bezier(.4,0,.7,1) forwards}
+@keyframes blowAway{to{opacity:0;transform:translateX(150px) translateY(-40px) rotate(58deg) scale(.4)}}
+.shake{animation:shk .28s ease-in-out 7}
+@keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.dropIn{animation:dropIn 1s cubic-bezier(.55,0,.85,.6) forwards}
+@keyframes dropIn{from{transform:translateY(-230px) rotate(-14deg)}to{transform:translateY(0) rotate(0)}}
+.shootOut{animation:shootOut .85s cubic-bezier(.4,0,.7,1) forwards}
+@keyframes shootOut{to{transform:translate(230px,-120px) rotate(46deg) scale(.55);opacity:0}}
+.climb{animation:climb 2s ease-in-out forwards}
+@keyframes climb{from{transform:translate(-70px,58px) scale(.85)}to{transform:translate(0,0) scale(1)}}
+.cheer{animation:cheer .7s ease-in-out infinite;transform-origin:50% 100%}
+@keyframes cheer{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-13px) rotate(4deg)}}
+.spin{animation:spin 9s linear infinite;transform-origin:50% 50%}
+@keyframes spin{to{transform:rotate(360deg)}}
+.float{animation:floatUp 3.4s ease-in-out infinite}
+@keyframes floatUp{0%,100%{transform:translateY(0) rotate(-8deg)}50%{transform:translateY(-22px) rotate(8deg)}}
 
-#pal{position:absolute;left:3%;bottom:3%;width:72px;z-index:6;transition:opacity .45s;
-  filter:drop-shadow(0 3px 3px rgba(60,45,30,.28));
+.pal{filter:drop-shadow(0 3px 3px rgba(60,45,30,.28));
   animation:brz 3.4s ease-in-out infinite;transform-origin:50% 100%}
-#pal.excited{animation:palHop .62s cubic-bezier(.4,0,.5,1) infinite}
-#pal.excited .ear{animation:earLag .62s cubic-bezier(.4,0,.5,1) infinite}
+.pal.excited{animation:palHop .62s cubic-bezier(.4,0,.5,1) infinite}
+.pal.excited .ear{animation:earLag .62s cubic-bezier(.4,0,.5,1) infinite}
 #pal.hide{opacity:0;transform:translateY(20px)}
 
 #bookBtn{
@@ -192,21 +198,9 @@ body{
   <section class="screen" id="sStory">
     <div id="stage">
       <div id="bgArt"></div>
-      <div class="deco" id="tree1"></div>
-      <div class="deco" id="tree2"></div>
-      <svg class="bush" viewBox="0 0 60 34" style="position:absolute;left:26%;bottom:47%;width:56px;height:32px"><ellipse cx="16" cy="24" rx="16" ry="12" fill="#7BB868"/><ellipse cx="34" cy="20" rx="19" ry="15" fill="#6FAC5D"/><ellipse cx="48" cy="26" rx="12" ry="9" fill="#7BB868"/></svg>
-      <svg class="bush" viewBox="0 0 60 34" style="position:absolute;right:30%;bottom:45%;width:44px;height:25px"><ellipse cx="18" cy="24" rx="17" ry="12" fill="#6FAC5D"/><ellipse cx="38" cy="21" rx="16" ry="13" fill="#7BB868"/></svg>
+      <div id="bgRoom"></div>
+      <div id="layer"></div>
       <button id="bookBtn"><span>📖</span><span id="bookCount">0</span></button>
-      <div class="obj" id="oStraw"></div>
-      <div class="obj" id="oStick"></div>
-      <div class="obj" id="oBrick"></div>
-      <div class="obj" id="oPig1"></div>
-      <div class="obj" id="oPig2"></div>
-      <div class="obj" id="oPig3"></div>
-      <div class="obj" id="oWolf"></div>
-      <div class="obj" id="oPot"></div>
-      <div class="obj" id="oPuff"></div>
-      <div id="pal"></div>
       <div class="sky" id="sky"></div>
     </div>
     <div id="bar">
@@ -439,11 +433,71 @@ function bgArt(){
    '<circle cx="238" cy="520" r="4.4" fill="#F27E8A"/><circle cx="238" cy="520" r="1.8" fill="#D4586A"/></svg>';
 }
 
+/* ---------- extra art for the new shots ---------- */
+function roofArt(){
+  return '<svg viewBox="0 0 340 170"><defs><linearGradient id="rfA" x1="0" y1="0" x2="0" y2="1">'+
+   '<stop offset="0%" stop-color="#C4685A"/><stop offset="100%" stop-color="#9A4838"/></linearGradient></defs>'+
+   '<path d="M0 62 L170 16 L340 62 L340 170 L0 170 Z" fill="url(#rfA)"/>'+
+   '<g stroke="#8C3F31" stroke-width="2.4" opacity=".45">'+
+   '<path d="M0 88h340M0 112h340M0 136h340M0 160h340"/>'+
+   '<path d="M34 62v26M102 62v26M170 62v26M238 62v26M306 62v26'+
+   'M0 88v24M68 88v24M136 88v24M204 88v24M272 88v24'+
+   'M34 112v24M102 112v24M170 112v24M238 112v24M306 112v24'+
+   'M0 136v24M68 136v24M136 136v24M204 136v24M272 136v24"/></g>'+
+   '<path d="M0 62 L170 16 L340 62" fill="none" stroke="#7A3628" stroke-width="6" stroke-linejoin="round"/></svg>';
+}
+function roomArt(){
+  return '<svg viewBox="0 0 330 590" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;width:100%;height:100%">'+
+   '<defs><linearGradient id="rmW" x1="0" y1="0" x2="0" y2="1">'+
+     '<stop offset="0%" stop-color="#C98F73"/><stop offset="100%" stop-color="#A9714F"/></linearGradient>'+
+   '<linearGradient id="rmF" x1="0" y1="0" x2="0" y2="1">'+
+     '<stop offset="0%" stop-color="#8A5E3C"/><stop offset="100%" stop-color="#6E4830"/></linearGradient></defs>'+
+   '<rect width="330" height="590" fill="url(#rmW)"/>'+
+   '<g stroke="#B07E60" stroke-width="2" opacity=".5">'+
+     '<path d="M0 70h330M0 130h330M0 190h330M0 250h330M0 310h330M0 370h330"/>'+
+     '<path d="M60 70v60M170 70v60M270 70v60M10 130v60M110 130v60M220 130v60M320 130v60'+
+             'M60 190v60M170 190v60M270 190v60M10 250v60M110 250v60M220 250v60M320 250v60'+
+             'M60 310v60M170 310v60M270 310v60"/></g>'+
+   '<rect y="392" width="330" height="198" fill="url(#rmF)"/>'+
+   '<g stroke="#5C3B26" stroke-width="2.4" opacity=".55"><path d="M0 430h330M0 480h330M0 530h330"/></g>'+
+   /* dark chimney shaft opening at the top */
+   '<rect x="96" y="0" width="138" height="70" fill="#2E2018"/>'+
+   '<rect x="88" y="62" width="154" height="16" rx="4" fill="#7A3628"/>'+
+   '<ellipse cx="165" cy="70" rx="62" ry="12" fill="#1E1410" opacity=".55"/></svg>';
+}
+function fireArt(){
+  return '<svg viewBox="0 0 120 60"><path d="M20 56 q10 -22 20 -6 q6 -26 20 -8 q10 -18 20 4 q6 -14 14 10 Z" fill="#E2694C"/>'+
+   '<path d="M32 56 q8 -16 16 -4 q5 -18 16 -5 q8 -12 14 9 Z" fill="#F2A03C"/>'+
+   '<path d="M46 56 q6 -11 12 -2 q5 -9 10 2 Z" fill="#F7D04A"/></svg>';
+}
+function splashArt(){
+  return '<svg viewBox="0 0 160 110">'+
+   '<g fill="#BFE3F5">'+
+   '<ellipse cx="80" cy="86" rx="52" ry="16" opacity=".85"/>'+
+   '<path d="M22 84 q-10 -32 -2 -46 q10 16 12 44 Z"/><path d="M138 84 q10 -32 2 -46 q-10 16 -12 44 Z"/>'+
+   '<path d="M52 76 q-8 -40 0 -60 q10 22 8 60 Z"/><path d="M108 76 q8 -40 0 -60 q-10 22 -8 60 Z"/>'+
+   '<circle cx="34" cy="18" r="8"/><circle cx="126" cy="14" r="7"/><circle cx="80" cy="4" r="9"/>'+
+   '<circle cx="58" cy="10" r="5"/><circle cx="104" cy="24" r="5.5"/></g></svg>';
+}
+function starburstArt(){
+  return '<svg viewBox="0 0 140 140"><g fill="#F7D04A" opacity=".95">'+
+   '<path d="M70 4 L80 50 L70 44 L60 50 Z"/><path d="M70 136 L80 90 L70 96 L60 90 Z"/>'+
+   '<path d="M4 70 L50 60 L44 70 L50 80 Z"/><path d="M136 70 L90 60 L96 70 L90 80 Z"/>'+
+   '<path d="M23 23 L58 55 L48 56 L45 66 Z"/><path d="M117 117 L82 85 L92 84 L95 74 Z"/>'+
+   '<path d="M117 23 L85 58 L84 48 L74 45 Z"/><path d="M23 117 L55 82 L56 92 L66 95 Z"/></g></svg>';
+}
+function noteArt(c){
+  return '<svg viewBox="0 0 40 44"><circle cx="12" cy="34" r="8" fill="'+c+'"/><rect x="18" y="4" width="4" height="32" fill="'+c+'"/>'+
+   '<path d="M20 4 q14 3 14 12 q-4 -7 -14 -7 Z" fill="'+c+'"/></svg>';
+}
+
 const _ARTSRC = {
   bunny:critter('bunny'), bear:critter('bear'), duck:critter('duck'), cat:critter('cat'),
   pig:pigArt(), wolf:wolfArt(),
   straw:houseArt('straw'), sticks:houseArt('sticks'), bricks:houseArt('bricks'),
-  chimney:chimneyArt(), pot:potArt(), puff:puffArt()
+  chimney:chimneyArt(), pot:potArt(), puff:puffArt(),
+  tree:treeArt(), roof:roofArt(), fire:fireArt(), splash:splashArt(), star:starburstArt(),
+  note1:noteArt('#E2694C'), note2:noteArt('#F2C14E'), note3:noteArt('#6FA8DC')
 };
 /* The same artwork can be on screen more than once (title + stage + word card).
    Duplicate gradient ids make later copies render unfilled, so hand out a fresh
@@ -464,13 +518,20 @@ Object.keys(_ARTSRC).forEach(k => Object.defineProperty(ART, k, {
    WORDS  (7 knowledge cards)
    ============================================================ */
 const WORDS = {
-  pig:     {en:'pig',     es:'el cerdito', art:'pig'},
-  straw:   {en:'straw',   es:'la paja',    art:'straw'},
-  sticks:  {en:'sticks',  es:'los palos',  art:'sticks'},
-  bricks:  {en:'bricks',  es:'los ladrillos', art:'bricks'},
-  wolf:    {en:'wolf',    es:'el lobo',    art:'wolf'},
-  chimney: {en:'chimney', es:'la chimenea',art:'chimney'},
-  pot:     {en:'pot',     es:'la olla',    art:'pot'}
+  pig:     {en:'pig',     es:'el cerdito',    art:'pig',
+            reveal:"It's a little pig!",                      reveal2:"That was a pig. I will remember!"},
+  straw:   {en:'straw',   es:'la paja',       art:'straw',
+            reveal:"That house is made of straw.",            reveal2:"Straw. I will remember that!"},
+  sticks:  {en:'sticks',  es:'los palos',     art:'sticks',
+            reveal:"That house is made of sticks.",           reveal2:"Sticks. I will remember that!"},
+  bricks:  {en:'bricks',  es:'los ladrillos', art:'bricks',
+            reveal:"That house is made of strong bricks.",    reveal2:"Bricks. I will remember that!"},
+  wolf:    {en:'wolf',    es:'el lobo',       art:'wolf',
+            reveal:"It's a big bad wolf!",                    reveal2:"That was a wolf. I will remember!"},
+  chimney: {en:'chimney', es:'la chimenea',   art:'chimney',
+            reveal:"That is the chimney, on top of the roof.",reveal2:"A chimney. I will remember that!"},
+  pot:     {en:'pot',     es:'la olla',       art:'pot',
+            reveal:"It's a big hot pot!",                     reveal2:"A pot. I will remember that!"}
 };
 const WORD_ORDER = ['pig','straw','sticks','bricks','wolf','chimney','pot'];
 
@@ -480,6 +541,182 @@ const ANIMALS = {
   duck: {label:'Duck',  names:['Ducky','Splash','Momo']},
   cat:  {label:'Cat',   names:['Mimi','Pounce','Whiskers']}
 };
+
+/* =========================================================
+   SCRIPT — every spoken line lives here so it can be pre-rendered
+   ========================================================= */
+const LINE = {
+  greet1:"Hello! I am {n}. Let's read a story together!",
+  greet2:"I don't know many words yet. Will you help me learn them?",
+  open:"Once upon a time, there were three little pigs.",
+  straw:"The first little pig built his house out of straw.",
+  sticks:"The second little pig built his house out of sticks.",
+  bricks:"And the third little pig built his house out of strong red bricks.",
+  wolfCame:"But then, along came a big bad wolf!",
+  knock:"The wolf knocked on the door. Little pig, little pig, let me come in!",
+  notBy:"Not by the hair of my chinny chin chin!",
+  blow:"Then I'll huff, and I'll puff, and I'll blow your house down! Blow with me! Blow into the phone!",
+  blewYes:"Whooosh! You did it! The straw house blew away!",
+  blewNo:"Whooosh! And the straw house blew away!",
+  run1:"The first little pig ran to the house made of sticks!",
+  huff2:"But the wolf huffed, and he puffed, and he blew that house down too!",
+  run2:"So both little pigs ran to the house made of bricks.",
+  huff3:"The wolf huffed. And he puffed. And he huffed and he puffed.",
+  strong:"But the brick house did not fall down. Bricks are too strong!",
+  climb:"So the sneaky wolf climbed up onto the roof, and down the chimney!",
+  waiting:"But the clever little pigs had something waiting for him.",
+  splash:"Splash! Right into the big hot pot!",
+  ranOut:"The wolf jumped up, ran out of the door, and never ever came back!",
+  end:"And the three little pigs lived happily ever after. The end!",
+  thanks:"Look how many words you taught me! Thank you!",
+  wAsk:"Ooh! What is that?",
+  wYes:"You said it! Thank you for teaching me!"
+};
+const LINE_VOICE = {greet1:'pal',greet2:'pal',wAsk:'pal',wYes:'pal',thanks:'pal',notBy:'pig'};
+
+/* voice presets — TTS voice for the build, rate/pitch for the browser fallback */
+const V = {
+  narr:{rate:.86, pitch:1.0,  k:'narr'},
+  pal :{rate:.94, pitch:1.5,  k:'pal'},
+  pig :{rate:.9,  pitch:1.35, k:'pig'},
+  slow:{rate:.72, pitch:1.0,  k:'slow'}
+};
+
+/* every utterance the app can ever make — the render script calls this */
+function allSpeech(){
+  const seen = {}, out = [];
+  const add = (t,v) => { if(t && !seen[t]){ seen[t]=1; out.push({t:t, v:v}); } };
+  const names = [];
+  Object.keys(ANIMALS).forEach(k => ANIMALS[k].names.forEach(n => names.push(n)));
+  Object.keys(LINE).forEach(k => {
+    const t = LINE[k], v = LINE_VOICE[k] || 'narr';
+    if(t.indexOf('{n}') >= 0) names.forEach(n => add(t.replace('{n}', n), v));
+    else add(t, v);
+  });
+  Object.keys(WORDS).forEach(k => {
+    const w = WORDS[k];
+    add(w.reveal, 'slow');
+    add(w.reveal2, 'pal');
+    add('Your turn! Can you say ' + w.en + '?', 'pal');
+    add('In Spanish, we say ' + w.es + '.', 'slow');
+    add(w.en, 'slow');
+    add('In Spanish, ' + w.es, 'slow');
+  });
+  add('Who wants to come with you today?', 'pal');
+  names.forEach(n => add('Hooray! My name is ' + n + '!', 'pal'));
+  Object.keys(ANIMALS).forEach(k => add('What shall we call your ' + ANIMALS[k].label.toLowerCase() + '?', 'pal'));
+  return out;
+}
+
+/* =========================================================
+   MUSIC — generated live, so there is no track to licence
+   ========================================================= */
+const Music = {
+  ctx:null, master:null, verb:null, timer:null, step:0, started:false,
+  base:0.062, gap:620,
+  scale:[261.63,293.66,329.63,392.00,440.00,523.25],
+  pattern:[0,2,4,2,1,3,5,3,0,4,2,0,1,3,4,2],
+  async start(){
+    if(this.started) return;
+    try{
+      const AC = window.AudioContext || window.webkitAudioContext;
+      this.ctx = new AC();
+      if(this.ctx.state === 'suspended') await this.ctx.resume();
+      this.master = this.ctx.createGain();
+      this.master.gain.value = this.base;
+      const len = Math.floor(this.ctx.sampleRate * 2.4);
+      const buf = this.ctx.createBuffer(2, len, this.ctx.sampleRate);
+      for(let c=0;c<2;c++){ const d = buf.getChannelData(c);
+        for(let i=0;i<len;i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/len, 2.8); }
+      this.verb = this.ctx.createConvolver(); this.verb.buffer = buf;
+      const vg = this.ctx.createGain(); vg.gain.value = 0.42;
+      this.verb.connect(vg); vg.connect(this.master);
+      this.master.connect(this.ctx.destination);
+      const pf = this.ctx.createBiquadFilter(); pf.type='lowpass'; pf.frequency.value=620;
+      const pg = this.ctx.createGain(); pg.gain.value = 0.05;
+      [130.81, 196.00].forEach(hz => {
+        [hz, hz*1.005].forEach(f => {
+          const o = this.ctx.createOscillator(); o.type='sine'; o.frequency.value=f;
+          o.connect(pf); o.start();
+        });
+      });
+      pf.connect(pg); pg.connect(this.master);
+      this.started = true;
+      this.tick();
+    }catch(e){}
+  },
+  note(hz, when, dur, vol){
+    const o = this.ctx.createOscillator(); o.type='triangle'; o.frequency.value=hz;
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0.0001, when);
+    g.gain.linearRampToValueAtTime(vol, when+0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, when+dur);
+    const f = this.ctx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=2400;
+    o.connect(f); f.connect(g); g.connect(this.master); g.connect(this.verb);
+    o.start(when); o.stop(when+dur+0.06);
+  },
+  tick(){
+    if(!this.started) return;
+    const t = this.ctx.currentTime + 0.06;
+    const i = this.pattern[this.step % this.pattern.length];
+    this.note(this.scale[i % this.scale.length], t, 1.6, 0.09);
+    if(this.step % 4 === 0) this.note(this.scale[0]/2, t, 2.4, 0.055);
+    this.step++;
+    this.timer = setTimeout(() => this.tick(), this.gap);
+  },
+  mood(m){
+    if(m === 'tense'){ this.scale=[220.00,261.63,293.66,329.63,392.00]; this.gap=850; }
+    else if(m === 'happy'){ this.scale=[261.63,329.63,392.00,440.00,523.25,659.25]; this.gap=520; }
+    else { this.scale=[261.63,293.66,329.63,392.00,440.00,523.25]; this.gap=620; }
+  },
+  duck(on){
+    if(!this.started) return;
+    const g = this.master.gain, t = this.ctx.currentTime;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(g.value, t);
+    g.linearRampToValueAtTime(on ? this.base*0.3 : this.base, t + 0.28);
+  }
+};
+
+/* =========================================================
+   AUDIO — pre-rendered narration, browser TTS as fallback
+   ========================================================= */
+const AUD = {ok:false, map:{}, cache:{}};
+async function loadAudio(){
+  try{
+    const r = await fetch('audio/manifest.json', {cache:'force-cache'});
+    if(r.ok){ AUD.map = await r.json(); AUD.ok = Object.keys(AUD.map).length > 0; warmAudio(); }
+  }catch(e){}
+}
+/* quietly pull the clips into cache a few at a time so nothing stutters mid-story */
+function warmAudio(){
+  const files = Object.keys(AUD.map).map(k => AUD.map[k]);
+  let i = 0;
+  (function next(){
+    for(let n = 0; n < 4 && i < files.length; n++, i++){
+      const f = files[i];
+      if(AUD.cache[f]) continue;
+      const a = new Audio('audio/' + f); a.preload = 'auto';
+      AUD.cache[f] = a;
+    }
+    if(i < files.length) setTimeout(next, 260);
+  })();
+}
+function playClip(file){
+  return new Promise(res => {
+    let a = AUD.cache[file];
+    if(!a){ a = new Audio('audio/' + file); a.preload = 'auto'; AUD.cache[file] = a; }
+    try{ a.currentTime = 0; }catch(e){}
+    Music.duck(true);
+    let done = false;
+    const fin = () => { if(done) return; done = true;
+      a.onended = null; a.onerror = null; clearTimeout(tm); Music.duck(false); res(); };
+    const tm = setTimeout(fin, 30000);
+    a.onended = fin; a.onerror = fin;
+    const pr = a.play();
+    if(pr && pr.catch) pr.catch(fin);
+  });
+}
 
 /* ============================================================
    STATE
@@ -507,7 +744,7 @@ function loadVoices(){
 loadVoices();
 if(typeof speechSynthesis !== 'undefined') speechSynthesis.onvoiceschanged = loadVoices;
 
-function speak(text, opt){
+function webSpeak(text, opt){
   opt = opt || {};
   return new Promise(res => {
     if(!('speechSynthesis' in window)){ setTimeout(res, Math.min(4000, text.length*55)); return; }
@@ -524,6 +761,11 @@ function speak(text, opt){
     const t = setTimeout(finish, 1600 + text.length * 105);
     try{ speechSynthesis.speak(u); }catch(e){ finish(); }
   });
+}
+function speak(text, opt){
+  const f = AUD.ok && AUD.map[text];
+  if(f) return playClip(f);
+  return webSpeak(text, opt);
 }
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
@@ -605,36 +847,66 @@ function tapOrVoice(ms, opts){
   });
 }
 
-/* ============================================================
-   STAGE HELPERS
-   ============================================================ */
-function show(id, yes){ const e = $(id); if(e) e.classList.toggle('on', yes !== false); }
-function hideAll(){ ['oStraw','oStick','oBrick','oPig1','oPig2','oPig3','oWolf','oPot','oPuff']
-  .forEach(i => { const e=$(i); e.classList.remove('on','blown','shake','glow'); }); }
+/* =========================================================
+   SCENE ENGINE — declarative shots, cross-faded
+   ========================================================= */
 function narrate(t){ $('narr').textContent = t; }
-async function line(text, opt){ narrate(text); await speak(text, opt); if(!skipFlag) await wait(260); }
-function palSay(){ $('pal').classList.add('excited'); }
-function palCalm(){ $('pal').classList.remove('excited'); }
+async function line(text, opt){
+  narrate(text);
+  await speak(text, opt);
+  if(!stopFlag) await wait(240);
+}
+function initStage(){
+  $('bgArt').innerHTML  = bgArt();
+  $('bgRoom').innerHTML = roomArt();
+}
+const L = () => $('layer');
+function itemHTML(o){
+  const pos = (o.r!=null ? 'right:'+o.r : 'left:'+(o.l!=null?o.l:'50%')) +
+              ';bottom:'+o.b + ';width:'+o.w+'px' +
+              (o.ml!=null ? ';margin-left:'+o.ml+'px' : '') +
+              (o.z!=null ? ';z-index:'+o.z : '') +
+              (o.d ? ';animation-delay:'+o.d+'ms' : '');
+  return '<div class="it '+(o.anim||'fade')+'" '+(o.id?'id="'+o.id+'"':'')+' style="'+pos+'">'+
+         '<div class="'+(o.cls||'')+'">'+o.a+'</div></div>';
+}
+function paint(items){ L().innerHTML = items.map(itemHTML).join(''); }
 
-function buildStage(){
-  $('bgArt').innerHTML = bgArt();
-  $('tree1').innerHTML = treeArt(); $('tree1').style.cssText = 'left:27.5%;bottom:37%;width:27px';
-  $('tree2').innerHTML = treeArt(); $('tree2').style.cssText = 'left:60.5%;bottom:35%;width:40px';
-  $('oStraw').innerHTML = ART.straw;  $('oStraw').style.cssText = 'left:2%;bottom:36%;width:100px';
-  $('oStick').innerHTML = ART.sticks; $('oStick').style.cssText = 'left:35%;bottom:36%;width:100px';
-  $('oBrick').innerHTML = ART.bricks; $('oBrick').style.cssText = 'right:2%;bottom:36%;width:100px';
-  $('oPig1').innerHTML = '<div class="brz">'+ART.pig+'</div>'; $('oPig1').style.cssText = 'left:12%;bottom:21%;width:54px';
-  $('oPig2').innerHTML = '<div class="brz">'+ART.pig+'</div>'; $('oPig2').style.cssText = 'left:43%;bottom:21%;width:54px';
-  $('oPig3').innerHTML = '<div class="brz">'+ART.pig+'</div>'; $('oPig3').style.cssText = 'right:12%;bottom:21%;width:54px';
-  $('oWolf').innerHTML  = '<div class="brz">'+ART.wolf+'</div>'; $('oWolf').style.cssText = 'right:4%;bottom:3%;width:70px';
-  $('oPot').innerHTML   = ART.pot;  $('oPot').style.cssText  = 'left:50%;margin-left:-46px;bottom:19%;width:92px';
-  $('oPuff').innerHTML  = ART.puff; $('oPuff').style.cssText = 'right:25%;bottom:48%;width:92px';
-  $('pal').innerHTML = ART[S.pal];
+/* swap the whole shot with a short cross-fade */
+async function shot(spec){
+  if(stopFlag) return;
+  L().style.opacity = '0';
+  await wait(300);
+  if(stopFlag) return;
+  $('bgRoom').style.opacity = spec.bg === 'room' ? '1' : '0';
+  if(spec.sky !== undefined) $('sky').classList.toggle('night', !!spec.sky);
+  paint(spec.items || []);
+  L().style.opacity = '1';
+  await wait(340);
+}
+/* add items to the current shot without rebuilding it */
+function addItems(items){ L().insertAdjacentHTML('beforeend', items.map(itemHTML).join('')); }
+const el = id => document.getElementById(id);
+
+/* ---------- the companion, sized for each shot ---------- */
+function pal(o){ return Object.assign({a:ART[S.pal], cls:'pal', anim:'rise', id:'pal'}, o); }
+
+/* ---------- reusable shot builders ---------- */
+function meadow(extra, opts){
+  opts = opts || {};
+  const base = [
+    {a:ART.tree, l:'27%', b:'37%', w:27, anim:'fade'},
+    {a:ART.tree, l:'60%', b:'35%', w:40, anim:'fade'}
+  ];
+  return {bg:'meadow', sky:opts.night||false, items: base.concat(extra||[])};
 }
 
 /* ============================================================
    WORD MOMENT — the child repeats ONE word to teach the pal
    ============================================================ */
+/* =========================================================
+   WORD MOMENT — child repeats ONE word to teach the companion
+   ========================================================= */
 function flyCardToBook(){
   const card = document.createElement('div');
   card.className = 'flyCard';
@@ -647,46 +919,39 @@ function flyCardToBook(){
   document.body.appendChild(card);
   requestAnimationFrame(() => {
     card.style.transition = 'transform .85s cubic-bezier(.5,0,.7,1), opacity .85s';
-    const dx = (to.left + to.width/2) - (from.left + from.width/2);
-    const dy = (to.top  + to.height/2) - (from.top  + from.height/2);
-    card.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(.22)';
+    card.style.transform = 'translate(' + ((to.left+to.width/2)-(from.left+from.width/2)) + 'px,' +
+                                          ((to.top+to.height/2)-(from.top+from.height/2)) + 'px) scale(.22)';
     card.style.opacity = '.5';
   });
-  setTimeout(() => {
-    card.remove();
-    $('bookBtn').classList.add('bump');
-    setTimeout(()=>$('bookBtn').classList.remove('bump'), 520);
-  }, 870);
+  setTimeout(() => { card.remove(); $('bookBtn').classList.add('bump');
+    setTimeout(()=>$('bookBtn').classList.remove('bump'), 520); }, 870);
 }
 
 async function wordMoment(key){
   if(stopFlag) return;
   const w = WORDS[key];
-  const N = S.name;
   flyCardToBook.key = key;
-
   $('wordPic').innerHTML = ART[w.art];
   $('wordText').textContent = w.en;
   $('wordEs').textContent = '';
-  $('wordYay').textContent = '';
-  $('wordYay').classList.remove('in');
+  $('wordYay').textContent = ''; $('wordYay').classList.remove('in');
   $('wordAsk').textContent = '';
   $('micRing').classList.remove('live');
   $('word').classList.add('on');
   await wait(60);
   $('wordCard').classList.add('in');
-  palSay();
+  if(el('pal')) el('pal').firstChild.classList.add('excited');
 
-  await line(N + ' says: ooh! What is THAT?', {pitch:1.5, rate:.9});
+  await line(LINE.wAsk, V.pal);
   if(stopFlag) return;
 
-  $('wordAsk').textContent = 'It’s a ' + w.en + '!';
-  await line('It’s a ' + w.en + '. ' + w.en + '.', {rate:.72});
+  // ONE clean sentence, with grammar that fits the word
+  $('wordAsk').textContent = w.reveal;
+  await line(w.reveal, V.slow);
   if(stopFlag) return;
 
-  $('wordAsk').textContent = Mic.ready ? 'Your turn — say “' + w.en + '”'
-                                      : 'Say it, then tap the picture';
-  await line('Can you say ' + w.en + '? Say it for ' + N + '!', {pitch:1.45, rate:.88});
+  $('wordAsk').textContent = Mic.ready ? 'Your turn — say “'+w.en+'”' : 'Say it, then tap the picture';
+  await line('Your turn! Can you say ' + w.en + '?', V.pal);
   if(stopFlag) return;
 
   $('micRing').classList.add('live');
@@ -697,139 +962,214 @@ async function wordMoment(key){
   $('wordYay').classList.add('in');
   $('wordEs').textContent = w.es;
 
-  if(heard) await line(w.en + '! You taught me! Thank you!', {pitch:1.55, rate:.92});
-  else      await line(w.en + '! I will remember that one.', {pitch:1.5, rate:.9});
+  await line(heard ? LINE.wYes : w.reveal2, V.pal);
   if(stopFlag) return;
-
-  await speak('In Spanish, ' + w.es + '.', {rate:.74});
+  await speak('In Spanish, we say ' + w.es + '.', V.slow);
 
   if(S.learned.indexOf(key) < 0){ S.learned.push(key); save(); }
   $('bookCount').textContent = S.learned.length;
   flyCardToBook();
-  await wait(700);
-
+  await wait(680);
   $('wordCard').classList.remove('in');
-  await wait(320);
+  await wait(300);
   $('word').classList.remove('on');
-  palCalm();
-  await wait(180);
+  if(el('pal')) el('pal').firstChild.classList.remove('excited');
+  await wait(140);
 }
 
-/* ============================================================
+/* =========================================================
    BLOW MOMENT
-   ============================================================ */
-async function blowMoment(){
+   ========================================================= */
+async function blowMoment(targetId){
   if(stopFlag) return;
   narrate('Blow into the phone! 💨');
-  palSay();
-  await speak('Then I’ll huff, and I’ll puff, and I’ll blow your house DOWN! Blow with me! Blow into the phone!', {rate:.86});
+  if(el('pal')) el('pal').firstChild.classList.add('excited');
+  await speak(LINE.blow, V.narr);
   if(stopFlag) return;
-  $('oWolf').classList.add('shake');
   const blew = await listenForVoice(6000, {needMs:200, gain:2.2, floor:.055});
-  $('oWolf').classList.remove('shake');
-  show('oPuff', true);
-  await wait(420);
-  $('oStraw').classList.add('blown');
-  await speak(blew ? 'WHOOOSH! You did it! The straw house blew away!' : 'WHOOOSH! The straw house blew away!', {rate:.88});
-  show('oPuff', false);
-  palCalm();
-  await wait(240);
+  addItems([{a:ART.puff, r:'26%', b:'52%', w:110, anim:'slideR', z:6, id:'puff'}]);
+  await wait(400);
+  if(el(targetId)) el(targetId).classList.add('blown');
+  await speak(blew ? LINE.blewYes : LINE.blewNo, V.narr);
+  if(el('puff')) el('puff').remove();
+  if(el('pal')) el('pal').firstChild.classList.remove('excited');
+  await wait(220);
 }
 
-/* ============================================================
-   THE STORY
-   ============================================================ */
+/* =========================================================
+   THE STORY — beats, each with its own shot
+   ========================================================= */
 async function runStory(){
   stopFlag = false;
-  hideAll();
-  $('sky').classList.remove('night');
   $('bookCount').textContent = S.learned.length;
   const N = S.name;
 
-  await line('Hello! I am ' + N + '. Let’s read a story together!', {pitch:1.5, rate:.9});
+  /* ---- 1. wide meadow, the three pigs ---- */
+  await shot(meadow([
+    {a:ART.pig, l:'12%', b:'21%', w:54, cls:'brz', anim:'pop', d:0},
+    {a:ART.pig, l:'43%', b:'21%', w:54, cls:'brz', anim:'pop', d:140},
+    {a:ART.pig, r:'12%', b:'21%', w:54, cls:'brz', anim:'pop', d:280},
+    pal({l:'3%', b:'3%', w:72})
+  ]));
+  await line(LINE.greet1.replace('{n}', N), V.pal);
   if(stopFlag) return;
-  await line('I don’t know many words yet… so can you help me learn?', {pitch:1.5, rate:.9});
+  await line(LINE.greet2, V.pal);
   if(stopFlag) return;
-
-  show('oPig1'); await wait(200); show('oPig2'); await wait(200); show('oPig3');
-  await line('Once upon a time, there were three little pigs.');
+  await line(LINE.open, V.narr);
   if(stopFlag) return;
   await wordMoment('pig');
   if(stopFlag) return;
 
-  show('oStraw');
-  await line('The first little pig built his house out of straw.');
+  /* ---- 2-4. the three houses go up ---- */
+  const pigs3 = [
+    {a:ART.pig, l:'12%', b:'21%', w:54, cls:'brz'},
+    {a:ART.pig, l:'43%', b:'21%', w:54, cls:'brz'},
+    {a:ART.pig, r:'12%', b:'21%', w:54, cls:'brz'}
+  ];
+  await shot(meadow([{a:ART.straw, l:'2%', b:'36%', w:100, anim:'rise'}].concat(pigs3, [pal({l:'3%', b:'3%', w:72})])));
+  await line(LINE.straw, V.narr);
   if(stopFlag) return;
   await wordMoment('straw');
   if(stopFlag) return;
 
-  show('oStick');
-  await line('The second little pig built his house out of sticks.');
+  await shot(meadow([
+    {a:ART.straw, l:'2%', b:'36%', w:100},
+    {a:ART.sticks, l:'35%', b:'36%', w:100, anim:'rise'}
+  ].concat(pigs3, [pal({l:'3%', b:'3%', w:72})])));
+  await line(LINE.sticks, V.narr);
   if(stopFlag) return;
   await wordMoment('sticks');
   if(stopFlag) return;
 
-  show('oBrick');
-  await line('And the third little pig built his house out of strong red bricks.');
+  await shot(meadow([
+    {a:ART.straw, l:'2%', b:'36%', w:100},
+    {a:ART.sticks, l:'35%', b:'36%', w:100},
+    {a:ART.bricks, r:'2%', b:'36%', w:100, anim:'rise'}
+  ].concat(pigs3, [pal({l:'3%', b:'3%', w:72})])));
+  await line(LINE.bricks, V.narr);
   if(stopFlag) return;
   await wordMoment('bricks');
   if(stopFlag) return;
 
-  $('sky').classList.add('night');
-  show('oWolf');
-  await line('But then… along came a big bad wolf!');
+  /* ---- 5. dusk — the wolf arrives ---- */
+  Music.mood('tense');
+  await shot(meadow([
+    {a:ART.straw, l:'2%', b:'36%', w:100},
+    {a:ART.sticks, l:'35%', b:'36%', w:100},
+    {a:ART.bricks, r:'2%', b:'36%', w:100}
+  ].concat(pigs3, [
+    {a:ART.wolf, r:'3%', b:'3%', w:78, anim:'slideR', cls:'brz', z:5},
+    pal({l:'3%', b:'3%', w:72})
+  ]), {night:true}));
+  await line(LINE.wolfCame, V.narr);
   if(stopFlag) return;
   await wordMoment('wolf');
   if(stopFlag) return;
 
-  await line('The wolf knocked on the door. Little pig, little pig, let me come in!', {rate:.8});
+  /* ---- 6. CLOSE on the straw house ---- */
+  await shot({bg:'meadow', sky:true, items:[
+    {a:ART.straw, l:'2%', b:'26%', w:210, anim:'slideL', id:'hStraw'},
+    {a:ART.pig, l:'20%', b:'18%', w:88, cls:'brz', z:4},
+    {a:ART.wolf, r:'0%', b:'14%', w:150, anim:'slideR', cls:'brz', z:5},
+    pal({l:'40%', b:'4%', w:96, z:6})
+  ]});
+  await line(LINE.knock, V.narr);
   if(stopFlag) return;
-  await line('Not by the hair of my chinny chin chin!', {pitch:1.4, rate:.86});
+  await line(LINE.notBy, V.pig);
   if(stopFlag) return;
-
-  await blowMoment();
+  await blowMoment('hStraw');
   if(stopFlag) return;
-
-  show('oPig1', false);
-  await line('The first little pig ran to the house made of sticks!');
-  if(stopFlag) return;
-  $('oStick').classList.add('blown');
-  await line('But the wolf huffed, and he puffed, and he blew that house down too!');
-  if(stopFlag) return;
-
-  show('oPig2', false);
-  await line('So both little pigs ran to the house made of bricks.');
-  if(stopFlag) return;
-  $('oBrick').classList.add('shake');
-  await line('The wolf huffed. And he puffed. And he huffed and he puffed…', {rate:.78});
-  $('oBrick').classList.remove('shake');
-  if(stopFlag) return;
-  await line('But the brick house did NOT fall down. Bricks are too strong!');
+  await line(LINE.run1, V.narr);
   if(stopFlag) return;
 
+  /* ---- 7. CLOSE on the stick house ---- */
+  await shot({bg:'meadow', sky:true, items:[
+    {a:ART.sticks, l:'2%', b:'26%', w:210, anim:'slideL', id:'hStick'},
+    {a:ART.pig, l:'12%', b:'18%', w:82, cls:'brz', z:4},
+    {a:ART.pig, l:'30%', b:'18%', w:82, cls:'brz', z:4},
+    {a:ART.wolf, r:'0%', b:'14%', w:150, anim:'slideR', cls:'brz', z:5},
+    pal({l:'44%', b:'4%', w:96, z:6})
+  ]});
+  await line(LINE.huff2, V.narr);
+  if(stopFlag) return;
+  addItems([{a:ART.puff, r:'30%', b:'50%', w:110, anim:'slideR', z:6, id:'puff2'}]);
+  await wait(420);
+  if(el('hStick')) el('hStick').classList.add('blown');
+  await wait(700);
+  if(el('puff2')) el('puff2').remove();
+  await line(LINE.run2, V.narr);
+  if(stopFlag) return;
+
+  /* ---- 8. CLOSE on the brick house — it holds ---- */
+  await shot({bg:'meadow', sky:true, items:[
+    {a:ART.bricks, l:'2%', b:'26%', w:214, anim:'slideL', id:'hBrick'},
+    {a:ART.wolf, r:'0%', b:'14%', w:150, anim:'slideR', cls:'brz', z:5},
+    pal({l:'42%', b:'4%', w:96, z:6})
+  ]});
+  await line(LINE.huff3, V.narr);
+  if(el('hBrick')) el('hBrick').classList.add('shake');
+  await wait(1900);
+  if(el('hBrick')) el('hBrick').classList.remove('shake');
+  if(stopFlag) return;
+  await line(LINE.strong, V.narr);
+  if(stopFlag) return;
+
+  /* ---- 9. ROOF — up to the chimney ---- */
+  await shot({bg:'meadow', sky:true, items:[
+    {a:ART.roof, l:'-3%', b:'-1%', w:420, anim:'rise', z:2},
+    {a:ART.chimney, l:'50%', ml:-52, b:'15%', w:104, anim:'rise', z:3},
+    {a:ART.wolf, l:'6%', b:'5%', w:112, cls:'climb', z:4, id:'wolfRoof'},
+    pal({r:'5%', b:'4%', w:86, z:5})
+  ]});
   await wordMoment('chimney');
   if(stopFlag) return;
-  await line('So the sneaky wolf climbed up onto the roof, and down the chimney!');
+  await line(LINE.climb, V.narr);
+  if(el('wolfRoof')) el('wolfRoof').classList.add('shootOut');
+  await wait(700);
   if(stopFlag) return;
 
-  show('oWolf', false);
-  show('oPot');
-  await line('But the clever little pigs had something waiting for him…');
-  if(stopFlag) return;
+  /* ---- 10. INSIDE — the pot ---- */
+  await shot({bg:'room', sky:false, items:[
+    {a:ART.fire, l:'50%', ml:-66, b:'18%', w:132, anim:'fade', z:2},
+    {a:ART.pot, l:'50%', ml:-66, b:'20%', w:132, anim:'rise', z:5, id:'thePot'},
+    {a:ART.pig, l:'2%', b:'15%', w:74, cls:'brz', z:6},
+    {a:ART.pig, r:'2%', b:'15%', w:74, cls:'brz', z:6},
+    pal({l:'50%', ml:-38, b:'0%', w:78, z:7})
+  ]});
   await wordMoment('pot');
   if(stopFlag) return;
-
-  await line('SPLASH! Right into the big hot pot!');
+  await line(LINE.waiting, V.narr);
   if(stopFlag) return;
-  await line('The wolf jumped up, ran out of the door, and never ever came back!');
+  // the wolf falls down the chimney into the pot
+  addItems([{a:ART.wolf, l:'50%', ml:-48, b:'26%', w:96, anim:'fade', z:3, id:'wolfDrop'}]);
+  if(el('wolfDrop')) el('wolfDrop').firstChild.classList.add('dropIn');
+  await wait(980);
+  addItems([{a:ART.splash, l:'50%', ml:-96, b:'27%', w:192, anim:'pop', z:8, id:'splash'}]);
+  await line(LINE.splash, V.narr);
+  if(el('wolfDrop')) el('wolfDrop').classList.add('shootOut');
+  await wait(500);
+  if(el('splash')) el('splash').remove();
+  if(stopFlag) return;
+  await line(LINE.ranOut, V.narr);
+  if(el('wolfDrop')) el('wolfDrop').remove();
   if(stopFlag) return;
 
-  $('sky').classList.remove('night');
-  show('oPig1'); show('oPig2'); show('oPig3');
-  await line('And the three little pigs lived happily ever after. The end!');
+  /* ---- 11. FINALE — daylight, no pot, everyone celebrating ---- */
+  Music.mood('happy');
+  await shot(meadow([
+    {a:ART.star, l:'50%', ml:-70, b:'58%', w:140, cls:'spin', anim:'pop', z:0},
+    {a:ART.bricks, l:'50%', ml:-56, b:'40%', w:112, anim:'rise', z:1},
+    {a:ART.note1, l:'16%', b:'56%', w:26, cls:'float', anim:'fade', z:2},
+    {a:ART.note2, r:'18%', b:'62%', w:22, cls:'float', anim:'fade', z:2},
+    {a:ART.note3, l:'34%', b:'66%', w:20, cls:'float', anim:'fade', z:2},
+    {a:ART.pig, l:'8%',  b:'14%', w:58, cls:'cheer', anim:'pop', d:0,   z:4},
+    {a:ART.pig, l:'36%', b:'14%', w:58, cls:'cheer', anim:'pop', d:150, z:4},
+    {a:ART.pig, r:'8%',  b:'14%', w:58, cls:'cheer', anim:'pop', d:300, z:4},
+    pal({l:'50%', ml:-36, b:'2%', w:72, z:5})
+  ]));
+  await line(LINE.end, V.narr);
   if(stopFlag) return;
-
-  await line('Look how many words you taught me! Thank you!', {pitch:1.55, rate:.92});
+  await line(LINE.thanks, V.pal);
   if(stopFlag) return;
   openBook();
 }
@@ -887,7 +1227,7 @@ function buildNameScreen(){
     b.className = 'nameBtn'; b.textContent = n;
     b.onclick = async () => {
       S.name = n; save();
-      buildStage();
+      initStage();
       goTo('sStory');
       narrate('…');
       await speak('Hooray! My name is ' + n + '!', {pitch:1.55, rate:.9});
@@ -907,7 +1247,10 @@ $('startBtn').onclick = async () => {
   // unlock audio inside the user gesture (iOS requirement)
   try{ speechSynthesis.cancel(); speechSynthesis.speak(new SpeechSynthesisUtterance(' ')); }catch(e){}
   if(!voicesReady) loadVoices();
-  Mic.init();   // fire inside the gesture so the prompt shows — but never wait for it
+  Mic.init();      // fire inside the gesture so the prompt shows — but never wait for it
+  Music.start();   // audio contexts may only start from a gesture
+  loadAudio();
+  initStage();
   buildAnimalGrid();
   goTo('sPick');
   speak('Who wants to come with you today?', {rate:.86});
@@ -918,7 +1261,7 @@ $('resetBtn').onclick = () => {
   alert('Cleared — Bobo has forgotten all the words.');
 };
 $('bookBtn').onclick = openBook;
-$('againBtn').onclick = () => { buildStage(); goTo('sStory'); runStory(); };
+$('againBtn').onclick = () => { initStage(); goTo('sStory'); runStory(); };
 $('homeBtn').onclick = () => {
   stopFlag = true;
   try{ speechSynthesis.cancel(); }catch(e){}
