@@ -38,7 +38,7 @@ body{
 .linkish{margin-top:16px;font-size:13px;color:#4B6B57;text-decoration:underline;background:none;border:none;font-family:inherit}
 
 /* ============ PICKERS ============ */
-.pickWrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:linear-gradient(#8ECBE6 0%,#C6E7F6 46%,#A8D98E 46%,#8FC978 100%)}
+.pickWrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;overflow-y:auto;background:linear-gradient(#8ECBE6 0%,#C6E7F6 46%,#A8D98E 46%,#8FC978 100%)}
 .pickTitle{font-size:25px;font-weight:600;color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.13);margin-bottom:24px;text-align:center;line-height:1.2}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:15px;width:100%;max-width:340px}
 .animBtn{
@@ -57,11 +57,11 @@ body{
 }
 .nameBtn:active{transform:scale(.95)}
 .nameCol{display:grid;gap:13px;width:100%;max-width:280px}
-.storyCol{display:grid;gap:16px;width:100%;max-width:320px}
+.storyCol{display:grid;gap:13px;width:100%;max-width:320px}
 .storyBtn{background:rgba(255,255,255,.95);border:none;border-radius:22px;padding:0;overflow:hidden;
   box-shadow:0 6px 0 rgba(0,0,0,.13);transition:transform .12s;font-family:inherit;text-align:left;width:100%}
 .storyBtn:active{transform:scale(.96)}
-.storyBtn .thumb{height:120px;background-size:cover;background-position:center;display:flex;align-items:flex-end;position:relative;overflow:hidden}
+.storyBtn .thumb{height:96px;background-size:cover;background-position:center;display:flex;align-items:flex-end;position:relative;overflow:hidden}
 .storyBtn .thumb .badge2{position:relative;z-index:2;margin:0 0 8px 10px;background:rgba(255,255,255,.92);border-radius:999px;
   font-size:11px;font-weight:700;color:#3B4A55;padding:4px 10px}
 .storyBtn .lab{padding:12px 15px 14px}
@@ -138,6 +138,20 @@ body{
 #narr{font-size:19px;line-height:1.36;font-weight:500;color:#28353E;text-align:center}
 #skip{position:absolute;right:12px;bottom:calc(8px + env(safe-area-inset-bottom));background:none;border:none;font-family:inherit;font-size:12px;color:#B9C4CC;padding:8px 10px}
 
+#wtag{position:absolute;left:12px;top:calc(12px + env(safe-area-inset-top));z-index:9;
+  display:flex;align-items:center;gap:11px;max-width:66%;
+  background:rgba(255,255,255,.97);border-radius:19px;padding:7px 16px 7px 7px;
+  box-shadow:0 10px 26px rgba(0,0,0,.26);pointer-events:none;
+  opacity:0;transform:translateX(-18px) scale(.9);
+  transition:opacity .4s,transform .5s cubic-bezier(.34,1.5,.64,1)}
+#wtag.on{opacity:1;transform:translateX(0) scale(1)}
+#wtag .pic{width:50px;height:50px;border-radius:14px;background:#F4EFE3;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;overflow:hidden}
+#wtag .pic svg,#wtag .pic img{width:88%;height:88%;object-fit:contain}
+#wtag .tx b{display:block;font-size:21px;font-weight:600;color:#28353E;line-height:1.1}
+#wtag .tx span{display:block;font-size:13px;font-weight:500;color:#2F7D6E;margin-top:1px}
+.pulse{animation:pulseIt 1.5s ease-in-out 2}
+@keyframes pulseIt{0%,100%{transform:scale(1)}50%{transform:scale(1.13)}}
 /* ============ WORD MOMENT ============ */
 #word{position:absolute;inset:0;z-index:20;display:none;flex-direction:column;align-items:center;justify-content:center;padding:22px;background:rgba(18,30,38,.72);backdrop-filter:blur(4px)}
 #word.on{display:flex;animation:fadeIn .4s}
@@ -226,6 +240,7 @@ body{
       <div id="bgPlate"></div>
       <div id="layer"></div>
       <button id="bookBtn"><span>📖</span><span id="bookCount">0</span></button>
+      <div id="wtag"><div class="pic"></div><div class="tx"><b></b><span></span></div></div>
       <div class="sky" id="sky"></div>
     </div>
     <div id="bar">
@@ -517,6 +532,7 @@ function noteArt(c){
 }
 
 /* ---------- story 2: claymation raster art (generated with fal) ---------- */
+const IMG2 = (f, extra) => '<img src="art2/'+f+'" alt="" draggable="false" style="width:100%;height:auto;display:block">';
 const IMG = (f, extra) => '<img src="art/'+f+'" alt="" draggable="false" style="width:100%;height:auto;display:block'+(extra||'')+'">';
 const CLAY = {
   spider:  IMG('spider-happy.png'),
@@ -649,11 +665,14 @@ function allSpeech(){
     else add(t, v);
   });
   Object.keys(SPIDER_LINES).forEach(k => add(SPIDER_LINES[k], SPIDER_VOICE[k] || 'narr'));
+  Object.keys(GB_LINES).forEach(k => add(GB_LINES[k], GB_VOICE[k] || 'narr'));
   const ALLW = {};
   Object.keys(WORD_PIGS).forEach(k => ALLW[k] = WORD_PIGS[k]);
   Object.keys(WORD_SPIDER).forEach(k => ALLW[k] = WORD_SPIDER[k]);
+  Object.keys(WORD_GB).forEach(k => { if(!ALLW[k]) ALLW[k] = WORD_GB[k]; });
   Object.keys(ALLW).forEach(k => {
     const w = ALLW[k];
+    if(!w.reveal) { add(w.en, 'slow'); add('In Spanish, ' + w.es, 'slow'); return; }
     add(w.reveal, 'slow');
     add(w.reveal2, 'pal');
     add('Your turn! Can you say ' + w.en + '?', 'pal');
@@ -1246,6 +1265,233 @@ async function runPigs(){
 }
 
 /* =========================================================
+   STORY 3 — The Gingerbread Man (cartoon)
+   Story first. One word per scene at most, never blocking.
+   ========================================================= */
+const TOON = {
+  gbHappy:IMG2('gb-happy.png'), gbRun:IMG2('gb-run.png'),
+  gbCheeky:IMG2('gb-cheeky.png'), gbWorried:IMG2('gb-worried.png'),
+  cow:IMG2('cow.png'), horse:IMG2('horse.png'), fox:IMG2('fox.png'), woman:IMG2('woman.png'),
+  oven:IMG2('gb-happy.png'), run:IMG2('gb-run.png'), fast:IMG2('gb-run.png'),
+  river:IMG2('fox.png'), home:IMG2('woman.png'),
+  pal:{bunny:IMG2('pal-bunny.png'), bear:IMG2('pal-bear.png'), duck:IMG2('pal-duck.png'), cat:IMG2('pal-cat.png')}
+};
+const SET = {};
+['kitchen','oven','doorway','garden','lane','meadow','field','farmyard','hill','river','water','cottage']
+  .forEach(k => SET[k] = 'art2/bg/'+k+'.jpg');
+
+const WORD_GB = {
+  oven:  {en:'oven',  es:'el horno',   art:'oven',  reveal:"", reveal2:""},
+  run:   {en:'run',   es:'correr',     art:'run',   reveal:"", reveal2:""},
+  cow:   {en:'cow',   es:'la vaca',    art:'cow',   reveal:"", reveal2:""},
+  horse: {en:'horse', es:'el caballo', art:'horse', reveal:"", reveal2:""},
+  fast:  {en:'fast',  es:'rápido',     art:'fast',  reveal:"", reveal2:""},
+  river: {en:'river', es:'el río',     art:'river', reveal:"", reveal2:""},
+  fox:   {en:'fox',   es:'el zorro',   art:'fox',   reveal:"", reveal2:""},
+  home:  {en:'home',  es:'la casa',    art:'home',  reveal:"", reveal2:""}
+};
+const GB_LINES = {
+  gGreet:"Ooh, this one is a chase! Come on, let's watch.",
+  gOpen:"One sunny morning, a kind old woman was baking in her little kitchen.",
+  gShape:"She rolled the dough flat, and cut out a little gingerbread man.",
+  gOven:"Then she popped him into the warm oven to bake.",
+  gPeek:"She waited, and she waited. And then something wonderful happened.",
+  gJump:"Out jumped the gingerbread man! He was alive!",
+  gRun:"And away he ran, straight out of the door.",
+  gChant:"Run, run, as fast as you can! You can't catch me, I'm the Gingerbread Man!",
+  gGarden:"He raced down the garden path, past all the flowers.",
+  gLane:"He raced along the winding country lane.",
+  gCow:"He ran past a big spotty cow, munching in the meadow.",
+  gCowSay:"Stop, little cake! said the cow. But the gingerbread man just laughed.",
+  gHorse:"He ran past a tall brown horse, standing by the golden field.",
+  gHorseSay:"Stop, little cake! said the horse. But he was already gone.",
+  gFarm:"The farmers came running out of the barn to catch him.",
+  gFast:"But nobody could catch him. He was much too fast!",
+  gHill:"Over the green hill he went, laughing all the way.",
+  gRiver:"Until at last, he came to a wide blue river.",
+  gStuck:"Oh no. Gingerbread men are not very good at swimming.",
+  gFox:"Just then, a clever orange fox came padding out of the reeds.",
+  gOffer:"Hop onto my back, said the fox, and I will carry you across.",
+  gRide:"So the gingerbread man hopped on, and the fox swam into the river.",
+  gTrick:"Halfway across, the sly fox began to tip his nose up, up, up.",
+  gJump2:"But the gingerbread man was quick! He jumped, and landed safe on the grass.",
+  gHome:"And he ran, all the way home, to the kind old woman.",
+  gEnd:"She laughed and laughed, and gave him the biggest hug. The end!",
+  gThanks:"That was the best one yet! And look how many words we found."
+};
+const GB_VOICE = {gGreet:'pal', gThanks:'pal', gChant:'pal', gCowSay:'pig', gHorseSay:'pig', gOffer:'pig'};
+
+async function runGB(){
+  stopFlag = false;
+  WORDS = WORD_GB;
+  $('bookCount').textContent = learned().length;
+  Music.mood('happy');
+  const P = o => Object.assign({a:TOON.pal[S.pal], cls:'pal', anim:'rise', id:'pal'}, o);
+  const G = GB_LINES;
+
+  /* 1 — the kitchen */
+  await shot({plate:SET.kitchen, sky:false, items:[
+    {a:TOON.woman, l:'8%', b:'6%', w:150, cls:'brz', anim:'slideL', z:4},
+    P({r:'6%', b:'4%', w:96, z:5})
+  ]});
+  await line(G.gGreet, V.pal);   if(stopFlag) return;
+  await line(G.gOpen, V.narr);   if(stopFlag) return;
+  await line(G.gShape, V.narr);  if(stopFlag) return;
+
+  /* 2 — into the oven  [word: oven] */
+  await shot({plate:SET.oven, sky:false, items:[
+    {a:TOON.woman, r:'4%', b:'5%', w:132, cls:'brz', anim:'slideR', z:4, id:'w2'},
+    P({l:'5%', b:'4%', w:90, z:5})
+  ]});
+  await sayWord('oven', G.gOven, V.narr);   if(stopFlag) return;
+  await line(G.gPeek, V.narr);              if(stopFlag) return;
+
+  /* 3 — out he jumps */
+  await shot({plate:SET.oven, sky:false, items:[
+    {a:TOON.gbHappy, l:'50%', ml:-62, b:'16%', w:124, anim:'pop', cls:'cheer', z:5},
+    P({l:'5%', b:'4%', w:86, z:4})
+  ]});
+  await line(G.gJump, V.narr);   if(stopFlag) return;
+
+  /* 4 — out of the door  [word: run] */
+  await shot({plate:SET.doorway, sky:false, items:[
+    {a:TOON.gbRun, l:'46%', b:'10%', w:128, anim:'slideL', z:5, id:'gbD'},
+    P({l:'4%', b:'4%', w:86, z:4})
+  ]});
+  await sayWord('run', G.gRun, V.narr, 'gbD');   if(stopFlag) return;
+
+  /* 5 — the garden, and the chant */
+  await shot({plate:SET.garden, sky:false, items:[
+    {a:TOON.gbCheeky, l:'40%', b:'8%', w:132, anim:'slideL', cls:'cheer', z:5},
+    P({r:'5%', b:'4%', w:88, z:4})
+  ]});
+  await line(G.gGarden, V.narr);   if(stopFlag) return;
+  await line(G.gChant, V.pal);     if(stopFlag) return;
+
+  /* 6 — the lane */
+  await shot({plate:SET.lane, sky:false, items:[
+    {a:TOON.gbRun, l:'34%', b:'9%', w:126, anim:'slideL', z:5},
+    P({r:'5%', b:'4%', w:86, z:4})
+  ]});
+  await line(G.gLane, V.narr);   if(stopFlag) return;
+
+  /* 7 — the cow  [word: cow] */
+  await shot({plate:SET.meadow, sky:false, items:[
+    {a:TOON.cow, r:'4%', b:'12%', w:186, anim:'slideR', cls:'brz', z:3, id:'theCow'},
+    {a:TOON.gbRun, l:'6%', b:'8%', w:112, anim:'slideL', z:5},
+    P({l:'40%', b:'3%', w:80, z:4})
+  ]});
+  await sayWord('cow', G.gCow, V.narr, 'theCow');   if(stopFlag) return;
+  await line(G.gCowSay, V.pig);                     if(stopFlag) return;
+
+  /* 8 — the horse  [word: horse] */
+  await shot({plate:SET.field, sky:false, items:[
+    {a:TOON.horse, r:'4%', b:'12%', w:190, anim:'slideR', cls:'brz', z:3, id:'theHorse'},
+    {a:TOON.gbRun, l:'6%', b:'8%', w:112, anim:'slideL', z:5},
+    P({l:'40%', b:'3%', w:80, z:4})
+  ]});
+  await sayWord('horse', G.gHorse, V.narr, 'theHorse');   if(stopFlag) return;
+  await line(G.gHorseSay, V.pig);                          if(stopFlag) return;
+
+  /* 9 — the farmyard  [word: fast] */
+  await shot({plate:SET.farmyard, sky:false, items:[
+    {a:TOON.gbRun, l:'8%', b:'9%', w:126, anim:'slideL', z:5, id:'gbF'},
+    P({r:'6%', b:'4%', w:88, z:4})
+  ]});
+  await line(G.gFarm, V.narr);   if(stopFlag) return;
+  await sayWord('fast', G.gFast, V.narr, 'gbF');   if(stopFlag) return;
+
+  /* 10 — over the hill */
+  await shot({plate:SET.hill, sky:false, items:[
+    {a:TOON.gbCheeky, l:'44%', b:'20%', w:118, anim:'pop', cls:'cheer', z:5},
+    P({l:'6%', b:'4%', w:86, z:4})
+  ]});
+  await line(G.gHill, V.narr);   if(stopFlag) return;
+
+  /* 11 — the river  [word: river] */
+  await shot({plate:SET.river, sky:false, items:[
+    {a:TOON.gbWorried, l:'46%', b:'8%', w:120, anim:'rise', z:5},
+    P({r:'6%', b:'4%', w:88, z:4})
+  ]});
+  await sayWord('river', G.gRiver, V.narr);   if(stopFlag) return;
+  await line(G.gStuck, V.narr);               if(stopFlag) return;
+
+  /* 12 — the fox  [word: fox] */
+  await shot({plate:SET.river, sky:false, items:[
+    {a:TOON.fox, r:'5%', b:'9%', w:176, anim:'slideR', cls:'brz', z:4, id:'theFox'},
+    {a:TOON.gbWorried, l:'8%', b:'8%', w:112, z:5},
+    P({l:'42%', b:'3%', w:78, z:3})
+  ]});
+  await sayWord('fox', G.gFox, V.narr, 'theFox');   if(stopFlag) return;
+  await line(G.gOffer, V.pig);                       if(stopFlag) return;
+
+  /* 13 — crossing the water */
+  await shot({plate:SET.water, sky:false, items:[
+    {a:TOON.fox, l:'50%', ml:-92, b:'22%', w:184, cls:'brz', anim:'rise', z:3, id:'foxSwim'},
+    {a:TOON.gbHappy, l:'50%', ml:-42, b:'40%', w:84, anim:'pop', z:5, id:'gbRide'},
+    P({r:'4%', b:'3%', w:76, z:4})
+  ]});
+  await line(G.gRide, V.narr);    if(stopFlag) return;
+  await line(G.gTrick, V.narr);
+  if(el('gbRide')) el('gbRide').firstChild.classList.add('cheer');
+  await wait(700);               if(stopFlag) return;
+
+  /* 14 — the jump to safety */
+  await shot({plate:SET.river, sky:false, items:[
+    {a:TOON.fox, r:'4%', b:'9%', w:150, z:3},
+    {a:TOON.gbCheeky, l:'12%', b:'22%', w:126, anim:'pop', cls:'cheer', z:5},
+    P({l:'46%', b:'3%', w:80, z:4})
+  ]});
+  await line(G.gJump2, V.narr);   if(stopFlag) return;
+
+  /* 15 — home  [word: home] */
+  await shot({plate:SET.cottage, sky:false, items:[
+    {a:TOON.woman, r:'8%', b:'8%', w:146, cls:'cheer', anim:'slideR', z:4, id:'gran'},
+    {a:TOON.gbRun, l:'8%', b:'8%', w:124, anim:'slideL', z:5},
+    P({l:'44%', b:'3%', w:84, z:3})
+  ]});
+  await sayWord('home', G.gHome, V.narr, 'gran');   if(stopFlag) return;
+  await line(G.gEnd, V.narr);      if(stopFlag) return;
+  await line(G.gThanks, V.pal);    if(stopFlag) return;
+  openBook();
+}
+
+/* =========================================================
+   INLINE WORD TAG — story-first. The word rides along with the
+   narration instead of stopping it. No modal, no mic wait.
+   ========================================================= */
+function tagArt(w){
+  if(w.art === 'up' || w.art === 'down') return arrowArt(w.art);
+  if(STORY === 'gb'     && TOON[w.art])  return TOON[w.art];
+  if(STORY === 'spider' && CLAY[w.art])  return CLAY[w.art];
+  return ART[w.art];
+}
+function showTag(key){
+  const w = WORDS[key], t = $('wtag');
+  t.querySelector('.pic').innerHTML = tagArt(w);
+  t.querySelector('.tx b').textContent = w.en;
+  t.querySelector('.tx span').textContent = w.es;
+  t.classList.add('on');
+}
+function hideTag(){ $('wtag').classList.remove('on'); }
+
+/* say a story line with the word quietly labelled underneath it */
+async function sayWord(key, text, voice, highlightId){
+  if(stopFlag) return;
+  if(highlightId && el(highlightId)) el(highlightId).firstChild.classList.add('pulse');
+  showTag(key);
+  await line(text, voice || V.narr);
+  if(!stopFlag) await wait(700);
+  hideTag();
+  if(highlightId && el(highlightId)) el(highlightId).firstChild.classList.remove('pulse');
+  if(learned().indexOf(key) < 0){ learned().push(key); save(); }
+  $('bookCount').textContent = learned().length;
+  $('bookBtn').classList.add('bump');
+  setTimeout(()=>$('bookBtn').classList.remove('bump'), 520);
+  if(!stopFlag) await wait(160);
+}
+
+/* =========================================================
    STORY 2 — Itsy Bitsy Spider (claymation)
    ========================================================= */
 const WORD_SPIDER = {
@@ -1428,7 +1674,8 @@ async function runSpider(){
 
 const STORIES = {
   pigs:   {title:'The Three Little Pigs', sub:'7 words to teach',       thumb:'',                      words:WORD_PIGS,   run:runPigs},
-  spider: {title:'Itsy Bitsy Spider',     sub:'9 words · claymation',   thumb:'art/bg/bg-rainbow.jpg', words:WORD_SPIDER, run:runSpider}
+  spider: {title:'Itsy Bitsy Spider',     sub:'9 words · claymation',   thumb:'art/bg/bg-rainbow.jpg', pos:'center top', words:WORD_SPIDER, run:runSpider},
+  gb:     {title:'The Gingerbread Man',   sub:'a big chase · cartoon',  thumb:'art2/bg/garden.jpg',    pos:'center 42%',  words:WORD_GB,     run:runGB}
 };
 let STORY = 'pigs';
 function buildStoryPicker(){
@@ -1438,7 +1685,7 @@ function buildStoryPicker(){
     const b = document.createElement('button');
     b.className = 'storyBtn';
     b.innerHTML =
-      '<div class="thumb" style="'+(st.thumb ? 'background-image:url('+st.thumb+');background-position:center top' : 'background:linear-gradient(#8ECBE6 0%,#C6E7F6 52%,#A8D98E 52%,#8FC978 100%)')+'">'+
+      '<div class="thumb" style="'+(st.thumb ? 'background-image:url('+st.thumb+');background-position:'+(st.pos||'center') : 'background:linear-gradient(#8ECBE6 0%,#C6E7F6 52%,#A8D98E 52%,#8FC978 100%)')+'">'+
         (st.thumb ? '' :
           '<div style="position:absolute;inset:0;pointer-events:none">'+
           '<div style="position:absolute;left:4%;bottom:6%;width:52px">'+ART.straw+'</div>'+

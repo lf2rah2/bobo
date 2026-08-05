@@ -1,6 +1,6 @@
 {
- "images": 21,
- "usd": 0.658,
+ "images": 47,
+ "usd": 1.462,
  "log": [
   {
    "what": "style test",
@@ -17,6 +17,14 @@
   {
    "what": "matte",
    "n": 14
+  },
+  {
+   "what": "gingerbread",
+   "n": 26
+  },
+  {
+   "what": "matte",
+   "n": 12
   }
  ]
 }
