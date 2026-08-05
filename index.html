@@ -147,9 +147,21 @@ body{
 #wtag.on{opacity:1;transform:translateX(0) scale(1)}
 #wtag .pic{width:50px;height:50px;border-radius:14px;background:#F4EFE3;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;overflow:hidden}
-#wtag .pic svg,#wtag .pic img{width:88%;height:88%;object-fit:contain}
+#wtag .pic .art{width:88%;height:88%;display:flex;align-items:center;justify-content:center}
+#wtag .pic svg,#wtag .pic img{width:100%;height:100%;object-fit:contain}
 #wtag .tx b{display:block;font-size:21px;font-weight:600;color:#28353E;line-height:1.1}
 #wtag .tx span{display:block;font-size:13px;font-weight:500;color:#2F7D6E;margin-top:1px}
+#wtag .pic{position:relative}
+#wtag .say{display:none;font-size:12.5px;font-weight:700;color:#E0891A;margin-top:3px;letter-spacing:.3px}
+#wtag .ring{position:absolute;inset:-5px;border-radius:18px;border:3px solid #F2A33C;display:none}
+/* the one beat per few scenes where the child gets a turn */
+#wtag.ask{transform-origin:left center;transform:translateX(0) scale(1.17);background:#FFFBEF;
+  box-shadow:0 14px 34px rgba(0,0,0,.3)}
+#wtag.ask .ring{display:block;animation:tagRing 1.15s ease-out infinite}
+#wtag.ask .say{display:block}
+#wtag.ask .tx span{display:none}
+#wtag.yay{background:#EAF8EE}
+@keyframes tagRing{0%{transform:scale(.9);opacity:.9}100%{transform:scale(1.4);opacity:0}}
 .pulse{animation:pulseIt 1.5s ease-in-out 2}
 @keyframes pulseIt{0%,100%{transform:scale(1)}50%{transform:scale(1.13)}}
 /* ============ WORD MOMENT ============ */
@@ -187,7 +199,7 @@ body{
 .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-bottom:24px}
 .kc{background:#fff;border-radius:18px;padding:11px 5px 9px;box-shadow:0 4px 0 rgba(0,0,0,.09);transition:transform .12s;border:none;font-family:inherit}
 .kc:active{transform:scale(.93)}
-.kc svg{width:50px;height:50px}
+.kc svg,.kc img{width:50px;height:50px;object-fit:contain;display:inline-block}
 .kc .w{font-size:14px;font-weight:600;color:#3B4A55;margin-top:3px}
 .kc .e{font-size:10.5px;font-weight:500;color:#2F7D6E}
 .kc.locked{background:rgba(255,255,255,.45);box-shadow:none}
@@ -240,7 +252,8 @@ body{
       <div id="bgPlate"></div>
       <div id="layer"></div>
       <button id="bookBtn"><span>📖</span><span id="bookCount">0</span></button>
-      <div id="wtag"><div class="pic"></div><div class="tx"><b></b><span></span></div></div>
+      <div id="wtag"><div class="pic"><i class="ring"></i><span class="art"></span></div>
+        <div class="tx"><b></b><span></span><div class="say">your turn!</div></div></div>
       <div class="sky" id="sky"></div>
     </div>
     <div id="bar">
@@ -532,7 +545,7 @@ function noteArt(c){
 }
 
 /* ---------- story 2: claymation raster art (generated with fal) ---------- */
-const IMG2 = (f, extra) => '<img src="art2/'+f+'" alt="" draggable="false" style="width:100%;height:auto;display:block">';
+const IMG2 = (f, extra) => '<img src="art2/'+f+'" alt="" draggable="false" style="width:100%;height:auto;display:block'+(extra||'')+'">';
 const IMG = (f, extra) => '<img src="art/'+f+'" alt="" draggable="false" style="width:100%;height:auto;display:block'+(extra||'')+'">';
 const CLAY = {
   spider:  IMG('spider-happy.png'),
@@ -672,6 +685,11 @@ function allSpeech(){
   Object.keys(WORD_GB).forEach(k => { if(!ALLW[k]) ALLW[k] = WORD_GB[k]; });
   Object.keys(ALLW).forEach(k => {
     const w = ALLW[k];
+    if(w.star){
+      add('Say it with me. ' + w.en + '!', 'pal');
+      add('Yes! ' + w.en + '!', 'pal');
+      add(w.en + '!', 'pal');
+    }
     if(!w.reveal) { add(w.en, 'slow'); add('In Spanish, ' + w.es, 'slow'); return; }
     add(w.reveal, 'slow');
     add(w.reveal2, 'pal');
@@ -690,10 +708,11 @@ function allSpeech(){
    MUSIC — generated live, so there is no track to licence
    ========================================================= */
 const Music = {
-  ctx:null, master:null, verb:null, timer:null, step:0, started:false,
-  base:0.062, gap:620,
-  scale:[261.63,293.66,329.63,392.00,440.00,523.25],
-  pattern:[0,2,4,2,1,3,5,3,0,4,2,0,1,3,4,2],
+  ctx:null, master:null, verb:null, noise:null, timer:null, step:0, started:false,
+  base:0.115, gap:430, duckTo:0.58, root:261.63,
+  /* I–V–vi–IV — the progression under almost every nursery tune */
+  prog:[[0,4,7],[7,11,14],[9,12,16],[5,9,12]],
+  mel :[12,16,19,16, 14,19,23,19, 21,16,12,16, 17,21,17,12],
   async start(){
     if(this.started) return;
     try{
@@ -707,52 +726,77 @@ const Music = {
       for(let c=0;c<2;c++){ const d = buf.getChannelData(c);
         for(let i=0;i<len;i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/len, 2.8); }
       this.verb = this.ctx.createConvolver(); this.verb.buffer = buf;
-      const vg = this.ctx.createGain(); vg.gain.value = 0.42;
+      const vg = this.ctx.createGain(); vg.gain.value = 0.36;
       this.verb.connect(vg); vg.connect(this.master);
       this.master.connect(this.ctx.destination);
-      const pf = this.ctx.createBiquadFilter(); pf.type='lowpass'; pf.frequency.value=620;
-      const pg = this.ctx.createGain(); pg.gain.value = 0.05;
-      [130.81, 196.00].forEach(hz => {
-        [hz, hz*1.005].forEach(f => {
-          const o = this.ctx.createOscillator(); o.type='sine'; o.frequency.value=f;
-          o.connect(pf); o.start();
-        });
-      });
-      pf.connect(pg); pg.connect(this.master);
+      const nl = Math.floor(this.ctx.sampleRate * 0.3);
+      this.noise = this.ctx.createBuffer(1, nl, this.ctx.sampleRate);
+      const nd = this.noise.getChannelData(0);
+      for(let i=0;i<nl;i++) nd[i] = Math.random()*2-1;
       this.started = true;
       this.tick();
     }catch(e){}
   },
-  note(hz, when, dur, vol){
-    const o = this.ctx.createOscillator(); o.type='triangle'; o.frequency.value=hz;
+  hz(n){ return this.root * Math.pow(2, n/12); },
+  note(n, when, dur, vol, type, cut){
+    const o = this.ctx.createOscillator();
+    o.type = type || 'triangle'; o.frequency.value = this.hz(n);
     const g = this.ctx.createGain();
     g.gain.setValueAtTime(0.0001, when);
-    g.gain.linearRampToValueAtTime(vol, when+0.03);
-    g.gain.exponentialRampToValueAtTime(0.0001, when+dur);
-    const f = this.ctx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=2400;
+    g.gain.linearRampToValueAtTime(vol, when + (dur > 1.4 ? 0.18 : 0.02));
+    g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+    const f = this.ctx.createBiquadFilter();
+    f.type = 'lowpass'; f.frequency.value = cut || 2600;
     o.connect(f); f.connect(g); g.connect(this.master); g.connect(this.verb);
-    o.start(when); o.stop(when+dur+0.06);
+    o.start(when); o.stop(when + dur + 0.06);
+  },
+  shake(when, vol){
+    const s = this.ctx.createBufferSource(); s.buffer = this.noise;
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(vol, when);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + 0.09);
+    const f = this.ctx.createBiquadFilter();
+    f.type = 'bandpass'; f.frequency.value = 7200; f.Q.value = 1.1;
+    s.connect(f); f.connect(g); g.connect(this.master);
+    s.start(when); s.stop(when + 0.12);
   },
   tick(){
     if(!this.started) return;
     const t = this.ctx.currentTime + 0.06;
-    const i = this.pattern[this.step % this.pattern.length];
-    this.note(this.scale[i % this.scale.length], t, 1.6, 0.09);
-    if(this.step % 4 === 0) this.note(this.scale[0]/2, t, 2.4, 0.055);
+    const bar = Math.floor(this.step / 4) % this.prog.length;
+    const ch  = this.prog[bar];
+    const beat = this.step % 4;
+    /* melody sits on top */
+    this.note(this.mel[this.step % this.mel.length], t, 0.9, 0.085);
+    if(beat === 0){
+      ch.forEach(n => this.note(n, t, 2.1, 0.024, 'sine', 1500));   // warm pad
+      this.note(ch[0] - 24, t, 1.9, 0.070, 'sine', 420);            // bass
+    }
+    this.shake(t, beat === 2 ? 0.030 : 0.014);
     this.step++;
     this.timer = setTimeout(() => this.tick(), this.gap);
   },
   mood(m){
-    if(m === 'tense'){ this.scale=[220.00,261.63,293.66,329.63,392.00]; this.gap=850; }
-    else if(m === 'happy'){ this.scale=[261.63,329.63,392.00,440.00,523.25,659.25]; this.gap=520; }
-    else { this.scale=[261.63,293.66,329.63,392.00,440.00,523.25]; this.gap=620; }
+    if(m === 'tense'){
+      this.prog = [[9,12,16],[7,11,14],[5,9,12],[4,8,11]];
+      this.mel  = [9,12,16,12, 11,14,19,14, 12,17,12,9, 8,11,16,11];
+      this.gap  = 540;
+    } else if(m === 'happy'){
+      this.prog = [[0,4,7],[7,11,14],[9,12,16],[5,9,12]];
+      this.mel  = [12,16,19,16, 14,19,23,19, 21,16,12,16, 17,21,17,12];
+      this.gap  = 400;
+    } else {
+      this.prog = [[0,4,7],[5,9,12],[7,11,14],[0,4,7]];
+      this.mel  = [12,14,16,14, 17,16,14,12, 19,17,16,14, 12,16,12,7];
+      this.gap  = 480;
+    }
   },
   duck(on){
     if(!this.started) return;
     const g = this.master.gain, t = this.ctx.currentTime;
     g.cancelScheduledValues(t);
     g.setValueAtTime(g.value, t);
-    g.linearRampToValueAtTime(on ? this.base*0.3 : this.base, t + 0.28);
+    g.linearRampToValueAtTime(on ? this.base*this.duckTo : this.base, t + 0.30);
   }
 };
 
@@ -949,10 +993,53 @@ function itemHTML(o){
               (o.ml!=null ? ';margin-left:'+o.ml+'px' : '') +
               (o.z!=null ? ';z-index:'+o.z : '') +
               (o.d ? ';animation-delay:'+o.d+'ms' : '');
-  return '<div class="it '+(o.anim||'fade')+'" '+(o.id?'id="'+o.id+'"':'')+' style="'+pos+'">'+
+  return '<div class="it '+(o.anim||'fade')+'" '+(o.id?'id="'+o.id+'"':'')+
+         (o.c?' data-c="'+o.c+'"':'')+' style="'+pos+'">'+
          '<div class="'+(o.cls||'')+'">'+o.a+'</div></div>';
 }
 function paint(items){ L().innerHTML = items.map(itemHTML).join(''); }
+
+/* =========================================================
+   CONTENT-AWARE PLACEMENT
+   Every cut-out is a 340x340 square that its subject only partly fills —
+   the old woman fills 47% of her canvas, the cow fills 84%. Sizing by the
+   box therefore drew her at half the scale of everything beside her.
+   fit() sizes by the SUBJECT and stands its feet on a ground line.
+   ========================================================= */
+const FIT = {
+  woman    :{f:'woman.png',     fw:.4706, fh:.8412, cx:.5000, cb:.9147},
+  cow      :{f:'cow.png',       fw:.8382, fh:.6471, cx:.4838, cb:.8382},
+  horse    :{f:'horse.png',     fw:.8500, fh:.7912, cx:.5132, cb:.9000},
+  fox      :{f:'fox.png',       fw:.5941, fh:.7382, cx:.5324, cb:.8706},
+  gbHappy  :{f:'gb-happy.png',  fw:.6235, fh:.8029, cx:.5088, cb:.9059},
+  gbRun    :{f:'gb-run.png',    fw:.7059, fh:.7971, cx:.5000, cb:.8971},
+  gbCheeky :{f:'gb-cheeky.png', fw:.5882, fh:.7971, cx:.5059, cb:.9088},
+  gbWorried:{f:'gb-worried.png',fw:.4500, fh:.8147, cx:.4985, cb:.9059},
+  palbunny :{f:'pal-bunny.png', fw:.3765, fh:.8882, cx:.5029, cb:.9382},
+  palbear  :{f:'pal-bear.png',  fw:.5559, fh:.7971, cx:.4985, cb:.9059},
+  palcat   :{f:'pal-cat.png',   fw:.5529, fh:.8500, cx:.5176, cb:.9265},
+  palduck  :{f:'pal-duck.png',  fw:.6147, fh:.7941, cx:.5015, cb:.9000}
+};
+function stageBox(){
+  const s = $('stage');
+  return {w: s.clientWidth || window.innerWidth || 390,
+          h: s.clientHeight || Math.round((window.innerHeight||760) * .72)};
+}
+/* ch = subject height as a fraction of the stage · cx = where the subject's
+   centre sits across the stage · b = the ground line its feet stand on */
+function fit(key, o){
+  const m = FIT[key === 'pal' ? 'pal' + S.pal : key];
+  const box  = stageBox();
+  const boxW = (o.ch * box.h) / m.fh;
+  const left = o.cx * box.w - boxW * m.cx;
+  const bot  = o.b  * box.h - boxW * (1 - m.cb);
+  const it = {a:IMG2(m.f, o.flip ? ';transform:scaleX(-1)' : ''),
+              l:left.toFixed(1)+'px', b:bot.toFixed(1)+'px', w:Math.round(boxW),
+              c:[left + boxW*(m.cx - m.fw/2), boxW*m.fw, o.b*box.h, o.ch*box.h]
+                 .map(n => Math.round(n)).join(',')};
+  ['cls','anim','id','z','d'].forEach(k => { if(o[k] != null) it[k] = o[k]; });
+  return it;
+}
 
 /* swap the whole shot with a short cross-fade */
 async function shot(spec){
@@ -1272,22 +1359,24 @@ const TOON = {
   gbHappy:IMG2('gb-happy.png'), gbRun:IMG2('gb-run.png'),
   gbCheeky:IMG2('gb-cheeky.png'), gbWorried:IMG2('gb-worried.png'),
   cow:IMG2('cow.png'), horse:IMG2('horse.png'), fox:IMG2('fox.png'), woman:IMG2('woman.png'),
-  oven:IMG2('gb-happy.png'), run:IMG2('gb-run.png'), fast:IMG2('gb-run.png'),
-  river:IMG2('fox.png'), home:IMG2('woman.png'),
+  oven:IMG2('icon-oven.png'), run:IMG2('gb-run.png'), fast:IMG2('gb-run.png'),
+  river:IMG2('icon-river.png'), home:IMG2('icon-home.png'),
   pal:{bunny:IMG2('pal-bunny.png'), bear:IMG2('pal-bear.png'), duck:IMG2('pal-duck.png'), cat:IMG2('pal-cat.png')}
 };
 const SET = {};
 ['kitchen','oven','doorway','garden','lane','meadow','field','farmyard','hill','river','water','cottage']
   .forEach(k => SET[k] = 'art2/bg/'+k+'.jpg');
 
+/* star = the child gets a turn to say this one. Three per story, spread out:
+   early, middle and late, and all easy for a three-year-old to pronounce. */
 const WORD_GB = {
   oven:  {en:'oven',  es:'el horno',   art:'oven',  reveal:"", reveal2:""},
-  run:   {en:'run',   es:'correr',     art:'run',   reveal:"", reveal2:""},
-  cow:   {en:'cow',   es:'la vaca',    art:'cow',   reveal:"", reveal2:""},
+  run:   {en:'run',   es:'correr',     art:'run',   reveal:"", reveal2:"", star:true},
+  cow:   {en:'cow',   es:'la vaca',    art:'cow',   reveal:"", reveal2:"", star:true},
   horse: {en:'horse', es:'el caballo', art:'horse', reveal:"", reveal2:""},
   fast:  {en:'fast',  es:'rápido',     art:'fast',  reveal:"", reveal2:""},
   river: {en:'river', es:'el río',     art:'river', reveal:"", reveal2:""},
-  fox:   {en:'fox',   es:'el zorro',   art:'fox',   reveal:"", reveal2:""},
+  fox:   {en:'fox',   es:'el zorro',   art:'fox',   reveal:"", reveal2:"", star:true},
   home:  {en:'home',  es:'la casa',    art:'home',  reveal:"", reveal2:""}
 };
 const GB_LINES = {
@@ -1321,18 +1410,19 @@ const GB_LINES = {
 };
 const GB_VOICE = {gGreet:'pal', gThanks:'pal', gChant:'pal', gCowSay:'pig', gHorseSay:'pig', gOffer:'pig'};
 
+/* The gingerbread man's art runs to the LEFT, so he enters from the right
+   (slideR) and everyone he races past stands on the left, facing him. */
 async function runGB(){
   stopFlag = false;
   WORDS = WORD_GB;
   $('bookCount').textContent = learned().length;
   Music.mood('happy');
-  const P = o => Object.assign({a:TOON.pal[S.pal], cls:'pal', anim:'rise', id:'pal'}, o);
   const G = GB_LINES;
 
-  /* 1 — the kitchen */
+  /* 1 — the kitchen: grandma at her table */
   await shot({plate:SET.kitchen, sky:false, items:[
-    {a:TOON.woman, l:'8%', b:'6%', w:150, cls:'brz', anim:'slideL', z:4},
-    P({r:'6%', b:'4%', w:96, z:5})
+    fit('woman', {ch:.50, cx:.60, b:.06, cls:'brz', anim:'rise', z:4}),
+    fit('pal',   {ch:.20, cx:.16, b:.05, cls:'pal', anim:'rise', z:5, id:'pal'})
   ]});
   await line(G.gGreet, V.pal);   if(stopFlag) return;
   await line(G.gOpen, V.narr);   if(stopFlag) return;
@@ -1340,96 +1430,92 @@ async function runGB(){
 
   /* 2 — into the oven  [word: oven] */
   await shot({plate:SET.oven, sky:false, items:[
-    {a:TOON.woman, r:'4%', b:'5%', w:132, cls:'brz', anim:'slideR', z:4, id:'w2'},
-    P({l:'5%', b:'4%', w:90, z:5})
+    fit('woman', {ch:.48, cx:.70, b:.06, cls:'brz', anim:'slideR', z:4, id:'w2'})
   ]});
   await sayWord('oven', G.gOven, V.narr);   if(stopFlag) return;
   await line(G.gPeek, V.narr);              if(stopFlag) return;
 
   /* 3 — out he jumps */
   await shot({plate:SET.oven, sky:false, items:[
-    {a:TOON.gbHappy, l:'50%', ml:-62, b:'16%', w:124, anim:'pop', cls:'cheer', z:5},
-    P({l:'5%', b:'4%', w:86, z:4})
+    fit('gbHappy', {ch:.38, cx:.42, b:.20, anim:'pop', cls:'cheer', z:5}),
+    fit('pal',     {ch:.16, cx:.86, b:.05, cls:'pal', anim:'rise', z:4, id:'pal'})
   ]});
   await line(G.gJump, V.narr);   if(stopFlag) return;
 
   /* 4 — out of the door  [word: run] */
   await shot({plate:SET.doorway, sky:false, items:[
-    {a:TOON.gbRun, l:'46%', b:'10%', w:128, anim:'slideL', z:5, id:'gbD'},
-    P({l:'4%', b:'4%', w:86, z:4})
+    fit('gbRun', {ch:.36, cx:.40, b:.07, anim:'slideR', z:5, id:'gbD'}),
+    fit('pal',   {ch:.16, cx:.865, b:.05, cls:'pal', anim:'rise', z:4, id:'pal'})
   ]});
   await sayWord('run', G.gRun, V.narr, 'gbD');   if(stopFlag) return;
 
   /* 5 — the garden, and the chant */
   await shot({plate:SET.garden, sky:false, items:[
-    {a:TOON.gbCheeky, l:'40%', b:'8%', w:132, anim:'slideL', cls:'cheer', z:5},
-    P({r:'5%', b:'4%', w:88, z:4})
+    fit('gbCheeky', {ch:.40, cx:.40, b:.06, cls:'cheer', anim:'slideR', z:5}),
+    fit('pal',      {ch:.18, cx:.855, b:.05, cls:'pal', anim:'rise', z:4, id:'pal'})
   ]});
   await line(G.gGarden, V.narr);   if(stopFlag) return;
   await line(G.gChant, V.pal);     if(stopFlag) return;
 
   /* 6 — the lane */
   await shot({plate:SET.lane, sky:false, items:[
-    {a:TOON.gbRun, l:'34%', b:'9%', w:126, anim:'slideL', z:5},
-    P({r:'5%', b:'4%', w:86, z:4})
+    fit('gbRun', {ch:.36, cx:.58, b:.07, anim:'slideR', z:5}),
+    fit('pal',   {ch:.16, cx:.135, b:.05, cls:'pal', anim:'rise', z:4, id:'pal'})
   ]});
   await line(G.gLane, V.narr);   if(stopFlag) return;
 
   /* 7 — the cow  [word: cow] */
   await shot({plate:SET.meadow, sky:false, items:[
-    {a:TOON.cow, r:'4%', b:'12%', w:186, anim:'slideR', cls:'brz', z:3, id:'theCow'},
-    {a:TOON.gbRun, l:'6%', b:'8%', w:112, anim:'slideL', z:5},
-    P({l:'40%', b:'3%', w:80, z:4})
+    fit('cow',   {ch:.21, cx:.28, b:.16, cls:'brz', anim:'rise', z:3, id:'theCow'}),
+    fit('gbRun', {ch:.21, cx:.78, b:.05, anim:'slideR', z:5})
   ]});
   await sayWord('cow', G.gCow, V.narr, 'theCow');   if(stopFlag) return;
   await line(G.gCowSay, V.pig);                     if(stopFlag) return;
 
   /* 8 — the horse  [word: horse] */
   await shot({plate:SET.field, sky:false, items:[
-    {a:TOON.horse, r:'4%', b:'12%', w:190, anim:'slideR', cls:'brz', z:3, id:'theHorse'},
-    {a:TOON.gbRun, l:'6%', b:'8%', w:112, anim:'slideL', z:5},
-    P({l:'40%', b:'3%', w:80, z:4})
+    fit('horse', {ch:.24, cx:.28, b:.16, cls:'brz', anim:'rise', z:3, id:'theHorse', flip:true}),
+    fit('gbRun', {ch:.21, cx:.78, b:.05, anim:'slideR', z:5})
   ]});
   await sayWord('horse', G.gHorse, V.narr, 'theHorse');   if(stopFlag) return;
   await line(G.gHorseSay, V.pig);                          if(stopFlag) return;
 
   /* 9 — the farmyard  [word: fast] */
   await shot({plate:SET.farmyard, sky:false, items:[
-    {a:TOON.gbRun, l:'8%', b:'9%', w:126, anim:'slideL', z:5, id:'gbF'},
-    P({r:'6%', b:'4%', w:88, z:4})
+    fit('gbRun', {ch:.34, cx:.40, b:.07, anim:'slideR', z:5, id:'gbF'}),
+    fit('pal',   {ch:.17, cx:.865, b:.05, cls:'pal', anim:'rise', z:4, id:'pal'})
   ]});
   await line(G.gFarm, V.narr);   if(stopFlag) return;
   await sayWord('fast', G.gFast, V.narr, 'gbF');   if(stopFlag) return;
 
   /* 10 — over the hill */
   await shot({plate:SET.hill, sky:false, items:[
-    {a:TOON.gbCheeky, l:'44%', b:'20%', w:118, anim:'pop', cls:'cheer', z:5},
-    P({l:'6%', b:'4%', w:86, z:4})
+    fit('gbCheeky', {ch:.38, cx:.55, b:.16, anim:'pop', cls:'cheer', z:5}),
+    fit('pal',      {ch:.16, cx:.135, b:.06, cls:'pal', anim:'rise', z:4, id:'pal'})
   ]});
   await line(G.gHill, V.narr);   if(stopFlag) return;
 
   /* 11 — the river  [word: river] */
   await shot({plate:SET.river, sky:false, items:[
-    {a:TOON.gbWorried, l:'46%', b:'8%', w:120, anim:'rise', z:5},
-    P({r:'6%', b:'4%', w:88, z:4})
+    fit('gbWorried', {ch:.34, cx:.34, b:.08, anim:'rise', z:5}),
+    fit('pal',       {ch:.19, cx:.80, b:.06, cls:'pal', anim:'rise', z:4, id:'pal'})
   ]});
   await sayWord('river', G.gRiver, V.narr);   if(stopFlag) return;
   await line(G.gStuck, V.narr);               if(stopFlag) return;
 
   /* 12 — the fox  [word: fox] */
   await shot({plate:SET.river, sky:false, items:[
-    {a:TOON.fox, r:'5%', b:'9%', w:176, anim:'slideR', cls:'brz', z:4, id:'theFox'},
-    {a:TOON.gbWorried, l:'8%', b:'8%', w:112, z:5},
-    P({l:'42%', b:'3%', w:78, z:3})
+    fit('fox',       {ch:.30, cx:.72, b:.08, cls:'brz', anim:'slideR', z:4, id:'theFox'}),
+    fit('gbWorried', {ch:.28, cx:.26, b:.08, z:5})
   ]});
   await sayWord('fox', G.gFox, V.narr, 'theFox');   if(stopFlag) return;
   await line(G.gOffer, V.pig);                       if(stopFlag) return;
 
-  /* 13 — crossing the water */
+  /* 13 — crossing the water: he rides on the fox's back (overlap on purpose) */
   await shot({plate:SET.water, sky:false, items:[
-    {a:TOON.fox, l:'50%', ml:-92, b:'22%', w:184, cls:'brz', anim:'rise', z:3, id:'foxSwim'},
-    {a:TOON.gbHappy, l:'50%', ml:-42, b:'40%', w:84, anim:'pop', z:5, id:'gbRide'},
-    P({r:'4%', b:'3%', w:76, z:4})
+    fit('fox',     {ch:.28, cx:.46, b:.16, cls:'brz', anim:'rise', z:3, id:'foxSwim'}),
+    fit('gbHappy', {ch:.15, cx:.43, b:.27, anim:'pop', z:5, id:'gbRide'}),
+    fit('pal',     {ch:.15, cx:.875, b:.05, cls:'pal', anim:'rise', z:4, id:'pal'})
   ]});
   await line(G.gRide, V.narr);    if(stopFlag) return;
   await line(G.gTrick, V.narr);
@@ -1438,17 +1524,15 @@ async function runGB(){
 
   /* 14 — the jump to safety */
   await shot({plate:SET.river, sky:false, items:[
-    {a:TOON.fox, r:'4%', b:'9%', w:150, z:3},
-    {a:TOON.gbCheeky, l:'12%', b:'22%', w:126, anim:'pop', cls:'cheer', z:5},
-    P({l:'46%', b:'3%', w:80, z:4})
+    fit('gbCheeky', {ch:.34, cx:.28, b:.22, anim:'pop', cls:'cheer', z:5}),
+    fit('fox',      {ch:.24, cx:.78, b:.09, z:3})
   ]});
   await line(G.gJump2, V.narr);   if(stopFlag) return;
 
   /* 15 — home  [word: home] */
   await shot({plate:SET.cottage, sky:false, items:[
-    {a:TOON.woman, r:'8%', b:'8%', w:146, cls:'cheer', anim:'slideR', z:4, id:'gran'},
-    {a:TOON.gbRun, l:'8%', b:'8%', w:124, anim:'slideL', z:5},
-    P({l:'44%', b:'3%', w:84, z:3})
+    fit('woman', {ch:.46, cx:.68, b:.06, cls:'cheer', anim:'slideR', z:4, id:'gran'}),
+    fit('gbRun', {ch:.22, cx:.22, b:.06, anim:'slideL', z:5, flip:true})
   ]});
   await sayWord('home', G.gHome, V.narr, 'gran');   if(stopFlag) return;
   await line(G.gEnd, V.narr);      if(stopFlag) return;
@@ -1468,26 +1552,47 @@ function tagArt(w){
 }
 function showTag(key){
   const w = WORDS[key], t = $('wtag');
-  t.querySelector('.pic').innerHTML = tagArt(w);
+  t.querySelector('.pic .art').innerHTML = tagArt(w);
   t.querySelector('.tx b').textContent = w.en;
   t.querySelector('.tx span').textContent = w.es;
+  t.classList.remove('ask','yay');
   t.classList.add('on');
 }
-function hideTag(){ $('wtag').classList.remove('on'); }
-
-/* say a story line with the word quietly labelled underneath it */
-async function sayWord(key, text, voice, highlightId){
-  if(stopFlag) return;
-  if(highlightId && el(highlightId)) el(highlightId).firstChild.classList.add('pulse');
-  showTag(key);
-  await line(text, voice || V.narr);
-  if(!stopFlag) await wait(700);
-  hideTag();
-  if(highlightId && el(highlightId)) el(highlightId).firstChild.classList.remove('pulse');
+function hideTag(){ $('wtag').classList.remove('on','ask','yay'); }
+function bankWord(key){
   if(learned().indexOf(key) < 0){ learned().push(key); save(); }
   $('bookCount').textContent = learned().length;
   $('bookBtn').classList.add('bump');
   setTimeout(()=>$('bookBtn').classList.remove('bump'), 520);
+}
+
+/* say a story line with the word quietly labelled beside it.
+   A few words are marked star — those get one short turn for the child to
+   echo, without ever leaving the scene or dimming it. */
+async function sayWord(key, text, voice, highlightId){
+  if(stopFlag) return;
+  const w = WORDS[key], t = $('wtag');
+  if(highlightId && el(highlightId)) el(highlightId).firstChild.classList.add('pulse');
+  showTag(key);
+  await line(text, voice || V.narr);
+  if(stopFlag){ hideTag(); return; }
+
+  if(w.star){
+    t.classList.add('ask');
+    await speak('Say it with me. ' + w.en + '!', V.pal);
+    if(!stopFlag){
+      const heard = await listenForVoice(3400, {needMs:150});
+      t.classList.remove('ask');
+      t.classList.add('yay');
+      if(!stopFlag) await speak(heard ? 'Yes! ' + w.en + '!' : w.en + '!', V.pal);
+    }
+  } else {
+    await wait(700);
+  }
+
+  hideTag();
+  if(highlightId && el(highlightId)) el(highlightId).firstChild.classList.remove('pulse');
+  bankWord(key);
   if(!stopFlag) await wait(160);
 }
 
@@ -1711,7 +1816,8 @@ function runActive(){ initStage(); goTo('sStory'); STORIES[STORY].run(); }
 function openBook(){
   stopFlag = true;
   try{ speechSynthesis.cancel(); }catch(e){}
-  $('bookPal').innerHTML = ART[S.pal];
+  $('bookPal').innerHTML = STORY === 'gb'     ? TOON.pal[S.pal]
+                         : STORY === 'spider' ? CLAY.pal[S.pal] : ART[S.pal];
   $('bookTitle').textContent = S.name + '’s Word Book';
   $('bookSub').textContent = learned().length + ' of ' + wordOrder().length + ' words learned · tap to hear again';
   const g = $('cardGrid'); g.innerHTML = '';
@@ -1719,7 +1825,7 @@ function openBook(){
     const w = WORDS[k], got = learned().indexOf(k) >= 0;
     const b = document.createElement('button');
     b.className = 'kc' + (got ? '' : ' locked');
-    b.innerHTML = (got ? ART[w.art] : '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="15" fill="#E4DBC8"/><text x="20" y="27" text-anchor="middle" font-size="19" fill="#BCAF98">?</text></svg>')
+    b.innerHTML = (got ? tagArt(w) : '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="15" fill="#E4DBC8"/><text x="20" y="27" text-anchor="middle" font-size="19" fill="#BCAF98">?</text></svg>')
       + '<div class="w">' + (got ? w.en : '???') + '</div>'
       + '<div class="e">' + (got ? w.es : '') + '</div>';
     if(got) b.onclick = async () => { await speak(w.en, {rate:.7}); await speak('In Spanish, ' + w.es, {rate:.74}); };
