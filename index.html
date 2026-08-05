@@ -859,12 +859,15 @@ const Music = {
 /* =========================================================
    AUDIO — pre-rendered narration, browser TTS as fallback
    ========================================================= */
-const AUD = {ok:false, map:{}, cache:{}};
-async function loadAudio(){
-  try{
-    const r = await fetch('audio/manifest.json', {cache:'force-cache'});
-    if(r.ok){ AUD.map = await r.json(); AUD.ok = Object.keys(AUD.map).length > 0; warmAudio(); }
-  }catch(e){}
+const AUD = {ok:false, map:{}, cache:{}, ready:null};
+function loadAudio(){
+  AUD.ready = (async () => {
+    try{
+      const r = await fetch('audio/manifest.json', {cache:'force-cache'});
+      if(r.ok){ AUD.map = await r.json(); AUD.ok = Object.keys(AUD.map).length > 0; warmAudio(); }
+    }catch(e){}
+  })();
+  return AUD.ready;
 }
 /* quietly pull the clips into cache a few at a time so nothing stutters mid-story */
 function warmAudio(){
@@ -944,7 +947,10 @@ function webSpeak(text, opt){
     try{ speechSynthesis.speak(u); }catch(e){ finish(); }
   });
 }
-function speak(text, opt){
+/* On a slow connection the first few lines used to fire before the clip
+   manifest arrived and fell back to the robot voice, so wait for it briefly. */
+async function speak(text, opt){
+  if(!AUD.ok && AUD.ready) await Promise.race([AUD.ready, wait(2500)]);
   const f = AUD.ok && AUD.map[text];
   if(f) return playClip(f);
   return webSpeak(text, opt);
