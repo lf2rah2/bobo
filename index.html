@@ -874,15 +874,19 @@ function warmAudio(){
   const files = Object.keys(AUD.map).map(k => AUD.map[k]);
   let i = 0;
   (function next(){
-    for(let n = 0; n < 4 && i < files.length; n++, i++){
+    /* gently — hammering a static host for 270 clips at once gets throttled */
+    for(let n = 0; n < 2 && i < files.length; n++, i++){
       const f = files[i];
       if(AUD.cache[f]) continue;
       const a = new Audio('audio/' + f); a.preload = 'auto';
+      a.onerror = () => { delete AUD.cache[f]; };
       AUD.cache[f] = a;
     }
-    if(i < files.length) setTimeout(next, 260);
+    if(i < files.length) setTimeout(next, 500);
   })();
 }
+/* resolves false if the clip could not be played, so the line can still be
+   spoken some other way rather than passing in silence */
 function playClip(file){
   return new Promise(res => {
     let a = AUD.cache[file];
@@ -890,12 +894,13 @@ function playClip(file){
     try{ a.currentTime = 0; }catch(e){}
     Music.duck(true);
     let done = false;
-    const fin = () => { if(done) return; done = true;
-      a.onended = null; a.onerror = null; clearTimeout(tm); Music.duck(false); res(); };
-    const tm = setTimeout(fin, 30000);
-    a.onended = fin; a.onerror = fin;
+    const fin = ok => { if(done) return; done = true;
+      a.onended = null; a.onerror = null; clearTimeout(tm); Music.duck(false); res(ok); };
+    const tm = setTimeout(() => fin(true), 30000);
+    a.onended = () => fin(true);
+    a.onerror = () => { delete AUD.cache[file]; fin(false); };
     const pr = a.play();
-    if(pr && pr.catch) pr.catch(fin);
+    if(pr && pr.catch) pr.catch(() => { delete AUD.cache[file]; fin(false); });
   });
 }
 
@@ -952,7 +957,7 @@ function webSpeak(text, opt){
 async function speak(text, opt){
   if(!AUD.ok && AUD.ready) await Promise.race([AUD.ready, wait(2500)]);
   const f = AUD.ok && AUD.map[text];
-  if(f) return playClip(f);
+  if(f && await playClip(f)) return;
   return webSpeak(text, opt);
 }
 const wait = ms => new Promise(r => setTimeout(r, ms));
