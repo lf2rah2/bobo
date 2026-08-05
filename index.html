@@ -136,6 +136,26 @@ body{
   box-shadow:0 -6px 22px rgba(0,0,0,.13);min-height:118px;display:flex;flex-direction:column;justify-content:center;position:relative;z-index:8;
 }
 #narr{font-size:19px;line-height:1.36;font-weight:500;color:#28353E;text-align:center}
+
+/* ===== live scene video ===== */
+.vid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  opacity:0;transition:opacity .62s ease;background:#0C1418}
+.vid.on{opacity:1}
+
+/* ===== speaker portrait — who is talking, game dialogue style.
+   Used by stories that keep the companion out of the scene. ===== */
+#speaker{display:none;position:absolute;left:16px;top:-30px;z-index:9;
+  flex-direction:column;align-items:center;gap:4px;width:76px}
+#bar.hasFace{padding-left:104px;padding-right:16px}
+#bar.hasFace #narr{text-align:left;font-size:18px}
+#speaker.on{display:flex}
+#spFace{width:66px;height:66px;border-radius:50%;object-fit:cover;display:block;
+  border:3px solid #fff;box-shadow:0 5px 16px rgba(20,14,6,.34);background:#EFE7D8;
+  transition:transform .3s}
+#speaker.talk #spFace{animation:spTalk 1.05s ease-in-out infinite}
+@keyframes spTalk{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-4px) scale(1.045)}}
+#spName{font-size:11.5px;font-weight:700;color:#8A949B;letter-spacing:.3px;
+  white-space:nowrap;max-width:96px;overflow:hidden;text-overflow:ellipsis;text-align:center}
 #skip{position:absolute;right:12px;bottom:calc(8px + env(safe-area-inset-bottom));background:none;border:none;font-family:inherit;font-size:12px;color:#B9C4CC;padding:8px 10px}
 
 #wtag{position:absolute;left:12px;top:calc(12px + env(safe-area-inset-top));z-index:9;
@@ -269,6 +289,8 @@ body{
       <div id="bgArt"></div>
       <div id="bgRoom"></div>
       <div id="bgPlate"></div>
+      <video id="vidA" class="vid" playsinline muted loop preload="auto"></video>
+      <video id="vidB" class="vid" playsinline muted loop preload="auto"></video>
       <div id="layer"></div>
       <button id="bookBtn"><span>📖</span><span id="bookCount">0</span></button>
       <div id="wtag"><div class="pic"><span class="art"></span></div>
@@ -284,6 +306,7 @@ body{
       <div class="sky" id="sky"></div>
     </div>
     <div id="bar">
+      <div id="speaker"><img id="spFace" alt=""><span id="spName"></span></div>
       <div id="narr">…</div>
       <button id="skip">skip ›</button>
     </div>
@@ -690,7 +713,11 @@ const V = {
   narr:{rate:.86, pitch:1.0,  k:'narr'},
   pal :{rate:.94, pitch:1.5,  k:'pal'},
   pig :{rate:.9,  pitch:1.35, k:'pig'},
-  slow:{rate:.72, pitch:1.0,  k:'slow'}
+  slow:{rate:.72, pitch:1.0,  k:'slow'},
+  rabbit:{rate:1.06, pitch:1.4,  k:'rabbit'},
+  cat   :{rate:.80,  pitch:.85,  k:'cat'},
+  queen :{rate:.88,  pitch:.95,  k:'queen'},
+  hatter:{rate:1.0,  pitch:1.25, k:'hatter'}
 };
 
 /* every utterance the app can ever make — the render script calls this */
@@ -706,10 +733,12 @@ function allSpeech(){
   });
   Object.keys(SPIDER_LINES).forEach(k => add(SPIDER_LINES[k], SPIDER_VOICE[k] || 'narr'));
   Object.keys(GB_LINES).forEach(k => add(GB_LINES[k], GB_VOICE[k] || 'narr'));
+  Object.keys(ALICE_LINES).forEach(k => add(ALICE_LINES[k], ALICE_VOICE[k] || 'narr'));
   const ALLW = {};
   Object.keys(WORD_PIGS).forEach(k => ALLW[k] = WORD_PIGS[k]);
   Object.keys(WORD_SPIDER).forEach(k => ALLW[k] = WORD_SPIDER[k]);
   Object.keys(WORD_GB).forEach(k => { if(!ALLW[k]) ALLW[k] = WORD_GB[k]; });
+  Object.keys(WORD_ALICE).forEach(k => { if(!ALLW[k]) ALLW[k] = WORD_ALICE[k]; });
   Object.keys(ALLW).forEach(k => {
     const w = ALLW[k];
     if(w.star){
@@ -1005,8 +1034,11 @@ function tapOrVoice(ms, opts){
    ========================================================= */
 function narrate(t){ $('narr').textContent = t; }
 async function line(text, opt){
+  setSpeaker(opt && opt.k);
   narrate(text);
+  $('speaker').classList.add('talk');
   await speak(text, opt);
+  $('speaker').classList.remove('talk');
   if(!stopFlag) await wait(240);
 }
 function initStage(){
@@ -1086,6 +1118,70 @@ async function shot(spec){
   L().style.opacity = '1';
   await wait(340);
 }
+/* =========================================================
+   LIVE SCENE VIDEO — a real moving shot per beat, cross-faded.
+   Two elements so the next clip can be decoding while this one plays.
+   ========================================================= */
+const Vid = {slot:0};
+const vidEl = i => $(i ? 'vidB' : 'vidA');
+
+/* pull the clips down in story order so a scene change never stalls */
+function warmVideo(list){
+  let i = 0;
+  (function next(){
+    if(i >= list.length) return;
+    fetch('art3/' + list[i++] + '.mp4', {cache:'force-cache'})
+      .then(r => r.arrayBuffer()).catch(()=>{})
+      .then(() => setTimeout(next, 500));
+  })();
+}
+async function vshot(name){
+  if(stopFlag) return;
+  const cur = vidEl(Vid.slot), nxt = vidEl(Vid.slot ^ 1);
+  nxt.src = 'art3/' + name + '.mp4';
+  nxt.load();
+  await Promise.race([
+    new Promise(r => { if(nxt.readyState >= 3) r(); else nxt.oncanplay = r; }),
+    wait(5000)
+  ]);
+  if(stopFlag) return;
+  try{ nxt.currentTime = 0; await nxt.play(); }catch(e){}
+  nxt.classList.add('on');
+  cur.classList.remove('on');
+  Vid.slot ^= 1;
+  await wait(540);
+  try{ cur.pause(); }catch(e){}
+}
+function stopVideo(){
+  ['vidA','vidB'].forEach(id => {
+    const v = $(id);
+    try{ v.pause(); }catch(e){}
+    v.classList.remove('on'); v.removeAttribute('src');
+    try{ v.load(); }catch(e){}
+  });
+  Vid.slot = 0;
+}
+
+/* =========================================================
+   SPEAKER PORTRAIT — for stories that keep the companion out of
+   the scene, the dialogue bar shows who is talking instead.
+   ========================================================= */
+const palFace = () => 'art3/p-' + (S.pal === 'cat' ? 'cat2' : S.pal) + '.png';
+const FACE = {narr:palFace, pal:palFace, slow:palFace,
+  rabbit:() => 'art3/p-rabbit.png', cat:() => 'art3/p-cat.png',
+  queen:() => 'art3/p-queen.png',   hatter:() => 'art3/p-hatter.png'};
+const WHO = {narr:() => S.name, pal:() => S.name, slow:() => S.name,
+  rabbit:() => 'White Rabbit', cat:() => 'Cheshire Cat',
+  queen:() => 'The Queen',     hatter:() => 'Mad Hatter'};
+function setSpeaker(kind){
+  if(!(STORIES[STORY] || {}).portrait) return;
+  const k = FACE[kind] ? kind : 'narr';
+  const src = FACE[k]();
+  const f = $('spFace');
+  if(f.getAttribute('src') !== src) f.setAttribute('src', src);
+  $('spName').textContent = WHO[k]();
+}
+
 /* add items to the current shot without rebuilding it */
 function addItems(items){ L().insertAdjacentHTML('beforeend', items.map(itemHTML).join('')); }
 const el = id => document.getElementById(id);
@@ -1573,6 +1669,7 @@ async function runGB(){
    ========================================================= */
 function tagArt(w){
   if(w.art === 'up' || w.art === 'down') return arrowArt(w.art);
+  if(STORY === 'alice'  && WON[w.art])   return WON[w.art];
   if(STORY === 'gb'     && TOON[w.art])  return TOON[w.art];
   if(STORY === 'spider' && CLAY[w.art])  return CLAY[w.art];
   return ART[w.art];
@@ -1826,10 +1923,152 @@ async function runSpider(){
   openBook();
 }
 
+/* =========================================================
+   STORY 4 — Alice in Wonderland (3D, live video scenes)
+   The companion is deliberately NOT composited into these shots. It never
+   blended with rendered art, so it moved to the dialogue bar instead and the
+   scenes became real cinematic footage.
+   ========================================================= */
+const AIMG = f => '<img src="art3/'+f+'" alt="" draggable="false" style="width:100%;height:auto;display:block">';
+const WON = {
+  rabbit:AIMG('p-rabbit.png'), hole:AIMG('w-hole.png'),  key:AIMG('w-key.png'),
+  small: AIMG('w-small.png'),  big: AIMG('w-big.png'),   tea:AIMG('w-tea.png'),
+  cat:   AIMG('p-cat.png'),    queen:AIMG('p-queen.png')
+};
+const ALICE_CLIPS = ['riverbank','rabbit','chase','hole','falling','fallthings','hall','key',
+  'door','small','shrunk','big','garden','cat','fade','tea','party','queen','cards','wake'];
+
+const WORD_ALICE = {
+  rabbit:{en:'rabbit',es:'el conejo', art:'rabbit',reveal:"",reveal2:"", star:true},
+  hole:  {en:'hole',  es:'el agujero',art:'hole',  reveal:"",reveal2:""},
+  key:   {en:'key',   es:'la llave',  art:'key',   reveal:"",reveal2:""},
+  small: {en:'small', es:'pequeño',   art:'small', reveal:"",reveal2:""},
+  big:   {en:'big',   es:'grande',    art:'big',   reveal:"",reveal2:""},
+  cat:   {en:'cat',   es:'el gato',   art:'cat',   reveal:"",reveal2:"", star:true},
+  tea:   {en:'tea',   es:'el té',     art:'tea',   reveal:"",reveal2:""},
+  queen: {en:'queen', es:'la reina',  art:'queen', reveal:"",reveal2:"", star:true}
+};
+const ALICE_LINES = {
+  aGreet:"Ooh, this one is a dream! Come and watch it with me.",
+  aOpen:"On a warm summer afternoon, Alice sat by the river, feeling very sleepy.",
+  aRabbit:"When all at once, a white rabbit in a red coat came hurrying by!",
+  aLate:"Oh my ears and whiskers! I'm late, I'm late, I'm terribly late!",
+  aChase:"Alice jumped up and ran after him, through the long summer grass.",
+  aHole:"The rabbit popped straight down a great round hole, under the hedge.",
+  aFall:"And Alice tumbled in after him. Down, and down, and down she went.",
+  aFloat:"She floated past teacups, and ticking clocks, and old picture books, all drifting in the air.",
+  aLand:"Bump! Alice landed softly at the bottom, in a long hall full of little doors.",
+  aKey:"And there on a glass table, she found a tiny golden key.",
+  aDoor:"It opened the very smallest door of all. And behind it was the loveliest garden.",
+  aBottle:"But the door was far too little. Then Alice saw a bottle. Drink me, said the label.",
+  aShrink:"She took one sip, and whoosh! Alice shrank until she was as small as a mouse.",
+  aCake:"Then she nibbled a little cake, and up she grew, big and tall, all the way to the ceiling!",
+  aGarden:"At last Alice found her way out, into a garden of enormous talking flowers.",
+  aCat:"And high in a tree sat a cat, with the widest smile she had ever seen.",
+  aCatSay:"We are all a little silly here. But don't you worry. You will find your way.",
+  aFade:"Then slowly, slowly, the cat faded away, until only his smile was left behind.",
+  aTea:"Further along the path, the Mad Hatter and the March Hare were having a tea party.",
+  aParty:"A very merry unbirthday to you! Have a cup, have a cake, have everything!",
+  aQueen:"Then the trumpets sounded. It was the Queen of Hearts, marching through her roses.",
+  aQueenSay:"Everybody up! Off you go, off you go, at once!",
+  aCards:"But her soldiers were only playing cards! Up they flew into the sky, like confetti.",
+  aWake:"And Alice opened her eyes. She was back by the river, warm and safe in the sunshine.",
+  aEnd:"What a very curious dream, she said with a smile. The end!",
+  aThanks:"That was the best dream ever. Look at all the words we found!"
+};
+const ALICE_VOICE = {aGreet:'pal', aThanks:'pal', aLate:'rabbit', aCatSay:'cat',
+                     aParty:'hatter', aQueenSay:'queen'};
+
+async function runAlice(){
+  stopFlag = false;
+  WORDS = WORD_ALICE;
+  $('bookCount').textContent = learned().length;
+  Music.mood('calm');
+  warmVideo(ALICE_CLIPS);
+  paint([]);                                   // nothing is composited over the film
+  $('bgPlate').style.opacity = '0';
+  $('bgRoom').style.opacity  = '0';
+  setSpeaker('narr');                          // never show an empty portrait
+  const A = ALICE_LINES;
+
+  await vshot('riverbank');
+  await line(A.aGreet, V.pal);   if(stopFlag) return;
+  await line(A.aOpen, V.narr);   if(stopFlag) return;
+
+  await vshot('rabbit');
+  await sayWord('rabbit', A.aRabbit, V.narr);   if(stopFlag) return;
+  await line(A.aLate, V.rabbit);                if(stopFlag) return;
+
+  Music.mood('happy');
+  await vshot('chase');
+  await line(A.aChase, V.narr);   if(stopFlag) return;
+
+  await vshot('hole');
+  await sayWord('hole', A.aHole, V.narr);   if(stopFlag) return;
+
+  Music.mood('tense');
+  await vshot('falling');
+  await line(A.aFall, V.narr);   if(stopFlag) return;
+
+  await vshot('fallthings');
+  await line(A.aFloat, V.narr);   if(stopFlag) return;
+
+  Music.mood('calm');
+  await vshot('hall');
+  await line(A.aLand, V.narr);   if(stopFlag) return;
+
+  await vshot('key');
+  await sayWord('key', A.aKey, V.narr);   if(stopFlag) return;
+
+  await vshot('door');
+  await line(A.aDoor, V.narr);   if(stopFlag) return;
+
+  await vshot('small');
+  await line(A.aBottle, V.narr);   if(stopFlag) return;
+
+  await vshot('shrunk');
+  await sayWord('small', A.aShrink, V.narr);   if(stopFlag) return;
+
+  await vshot('big');
+  await sayWord('big', A.aCake, V.narr);   if(stopFlag) return;
+
+  Music.mood('happy');
+  await vshot('garden');
+  await line(A.aGarden, V.narr);   if(stopFlag) return;
+
+  await vshot('cat');
+  await sayWord('cat', A.aCat, V.narr);   if(stopFlag) return;
+  await line(A.aCatSay, V.cat);            if(stopFlag) return;
+
+  await vshot('fade');
+  await line(A.aFade, V.narr);   if(stopFlag) return;
+
+  await vshot('tea');
+  await sayWord('tea', A.aTea, V.narr);   if(stopFlag) return;
+
+  await vshot('party');
+  await line(A.aParty, V.hatter);   if(stopFlag) return;
+
+  await vshot('queen');
+  await sayWord('queen', A.aQueen, V.narr);   if(stopFlag) return;
+  await line(A.aQueenSay, V.queen);            if(stopFlag) return;
+
+  await vshot('cards');
+  await line(A.aCards, V.narr);   if(stopFlag) return;
+
+  Music.mood('calm');
+  await vshot('wake');
+  await line(A.aWake, V.narr);    if(stopFlag) return;
+  await line(A.aEnd, V.narr);     if(stopFlag) return;
+  await line(A.aThanks, V.pal);   if(stopFlag) return;
+  openBook();
+}
+
 const STORIES = {
   pigs:   {title:'The Three Little Pigs', sub:'7 words to teach',       thumb:'',                      words:WORD_PIGS,   run:runPigs},
   spider: {title:'Itsy Bitsy Spider',     sub:'9 words · claymation',   thumb:'art/bg/bg-rainbow.jpg', pos:'center top', words:WORD_SPIDER, run:runSpider},
-  gb:     {title:'The Gingerbread Man',   sub:'a big chase · cartoon',  thumb:'art2/bg/garden.jpg',    pos:'center 42%',  words:WORD_GB,     run:runGB}
+  gb:     {title:'The Gingerbread Man',   sub:'a big chase · cartoon',  thumb:'art2/bg/garden.jpg',    pos:'center 42%',  words:WORD_GB,     run:runGB},
+  alice:  {title:'Alice in Wonderland',   sub:'a dream · moving film',  thumb:'art3/poster.jpg',       pos:'center 30%',  words:WORD_ALICE,  run:runAlice, portrait:true}
 };
 let STORY = 'pigs';
 function buildStoryPicker(){
@@ -1857,7 +2096,15 @@ function buildStoryPicker(){
     c.appendChild(b);
   });
 }
-function runActive(){ initStage(); goTo('sStory'); STORIES[STORY].run(); }
+function runActive(){
+  initStage();
+  const st = STORIES[STORY];
+  $('speaker').classList.toggle('on', !!st.portrait);
+  $('bar').classList.toggle('hasFace', !!st.portrait);
+  if(!st.portrait) stopVideo();
+  goTo('sStory');
+  st.run();
+}
 
 /* ============================================================
    BOOK
@@ -1866,7 +2113,9 @@ function openBook(){
   stopFlag = true;
   try{ speechSynthesis.cancel(); }catch(e){}
   closeSay(); hideTag();
-  $('bookPal').innerHTML = STORY === 'gb'     ? TOON.pal[S.pal]
+  stopVideo();
+  $('bookPal').innerHTML = STORY === 'alice'  ? AIMG('p-' + (S.pal==='cat'?'cat2':S.pal) + '.png')
+                         : STORY === 'gb'     ? TOON.pal[S.pal]
                          : STORY === 'spider' ? CLAY.pal[S.pal] : ART[S.pal];
   $('bookTitle').textContent = S.name + '’s Word Book';
   $('bookSub').textContent = learned().length + ' of ' + wordOrder().length + ' words learned · tap to hear again';
@@ -1949,7 +2198,7 @@ $('againBtn').onclick = () => { runActive(); };
 $('homeBtn').onclick = () => {
   stopFlag = true;
   try{ speechSynthesis.cancel(); }catch(e){}
-  closeSay(); hideTag();
+  closeSay(); hideTag(); stopVideo();
   $('titlePal').innerHTML = ART[S.pal];
   if(totalLearned()) $('resetBtn').style.display = 'block';
   buildStoryPicker();
