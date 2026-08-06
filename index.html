@@ -72,7 +72,7 @@ body{
 
 /* ============ STORY ============ */
 #stage{flex:1;position:relative;overflow:hidden;background:#BFE3F5;transition:background .9s}
-#bgArt{position:absolute;inset:0}
+#bgArt{position:absolute;inset:0;transition:opacity .45s}
 .deco{position:absolute;pointer-events:none}
 /* #sky is now a dusk veil ABOVE the cast — keeps the existing .night toggle working */
 .sky{position:absolute;inset:0;z-index:7;pointer-events:none;opacity:0;transition:1.2s;
@@ -916,8 +916,8 @@ function playOnce(file){
 async function playClip(file){
   Music.duck(true);
   let ok = false;
-  for(let t = 0; t < 3 && !ok && !stopFlag; t++){
-    if(t) await wait(450 * t);
+  for(let t = 0; t < 5 && !ok && !stopFlag; t++){
+    if(t) await wait(400 * t);
     ok = await playOnce(file);
   }
   Music.duck(false);
@@ -1075,6 +1075,7 @@ async function line(text, opt){
   if(!stopFlag) await wait(240);
 }
 function initStage(){
+  $('bgArt').style.opacity = '1';
   $('bgArt').innerHTML  = bgArt();
   $('bgRoom').innerHTML = roomArt();
 }
@@ -1155,33 +1156,43 @@ async function shot(spec){
    LIVE SCENE VIDEO — a real moving shot per beat, cross-faded.
    Two elements so the next clip can be decoding while this one plays.
    ========================================================= */
-const Vid = {slot:0, dir:'art3'};
+const Vid = {slot:0, dir:'art3', list:[], warm:{}};
 const vidEl = i => $(i ? 'vidB' : 'vidA');
 
-/* pull the clips down in story order so a scene change never stalls */
-function warmVideo(list){
-  let i = 0;
-  (function next(){
-    if(i >= list.length) return;
-    fetch(Vid.dir + '/' + list[i++] + '.mp4', {cache:'force-cache'})
-      .then(r => r.arrayBuffer()).catch(()=>{})
-      .then(() => setTimeout(next, 500));
-  })();
+/* Only ever fetch ONE clip ahead. Pulling all twenty (12MB) in the background
+   starved the clip that was actually playing and got the host throttling —
+   which surfaced as blank scenes and narration dropping to the fallback voice. */
+function warmVideo(list){ Vid.list = list; prefetch(list[1]); }
+function prefetch(name){
+  if(!name || Vid.warm[name]) return;
+  Vid.warm[name] = 1;
+  fetch(Vid.dir + '/' + name + '.mp4', {cache:'force-cache'})
+    .then(r => r.arrayBuffer()).catch(() => { delete Vid.warm[name]; });
 }
 async function vshot(name){
   if(stopFlag) return;
   const cur = vidEl(Vid.slot), nxt = vidEl(Vid.slot ^ 1);
-  nxt.src = Vid.dir + '/' + name + '.mp4';
-  nxt.load();
-  await Promise.race([
-    new Promise(r => { if(nxt.readyState >= 3) r(); else nxt.oncanplay = r; }),
-    wait(5000)
-  ]);
+  let ok = false;
+  for(let t = 0; t < 3 && !ok && !stopFlag; t++){
+    nxt.src = Vid.dir + '/' + name + '.mp4';
+    nxt.load();
+    await Promise.race([
+      new Promise(r => { if(nxt.readyState >= 3) r(); else { nxt.oncanplay = r; nxt.onerror = r; } }),
+      wait(4500 + t * 2500)
+    ]);
+    ok = nxt.readyState >= 3;
+    if(!ok && !stopFlag) await wait(600 * (t + 1));
+  }
   if(stopFlag) return;
+  /* if it still will not load, hold the scene already showing — that beats
+     cutting to an empty frame with the wrong backdrop behind it */
+  if(!ok) return;
   try{ nxt.currentTime = 0; await nxt.play(); }catch(e){}
   nxt.classList.add('on');
   cur.classList.remove('on');
   Vid.slot ^= 1;
+  const i = Vid.list.indexOf(name);
+  if(i >= 0) prefetch(Vid.list[i + 1]);
   await wait(540);
   try{ cur.pause(); }catch(e){}
 }
@@ -2027,6 +2038,7 @@ async function runAlice(){
   paint([]);                                   // nothing is composited over the film
   $('bgPlate').style.opacity = '0';
   $('bgRoom').style.opacity  = '0';
+  $('bgArt').style.opacity   = '0';
   setSpeaker('narr');                          // never show an empty portrait
   const A = ALICE_LINES;
 
@@ -2171,6 +2183,7 @@ async function runDuck(){
   paint([]);
   $('bgPlate').style.opacity = '0';
   $('bgRoom').style.opacity  = '0';
+  $('bgArt').style.opacity   = '0';
   setSpeaker('dnarr');
   const U = DUCK_LINES;
 
