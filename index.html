@@ -717,7 +717,15 @@ const V = {
   rabbit:{rate:1.06, pitch:1.4,  k:'rabbit'},
   cat   :{rate:.80,  pitch:.85,  k:'cat'},
   queen :{rate:.88,  pitch:.95,  k:'queen'},
-  hatter:{rate:1.0,  pitch:1.25, k:'hatter'}
+  hatter:{rate:1.0,  pitch:1.25, k:'hatter'},
+  /* The Ugly Duckling is voiced by ElevenLabs rather than OpenAI, so its
+     speaker kinds are distinct — that is how the renderer knows which
+     engine each line belongs to. */
+  dnarr:{rate:.86, pitch:1.0,  k:'dnarr'},
+  dpal :{rate:.94, pitch:1.5,  k:'dpal'},
+  mum  :{rate:.88, pitch:1.05, k:'mum'},
+  duck :{rate:.95, pitch:1.4,  k:'duck'},
+  swan :{rate:.84, pitch:.95,  k:'swan'}
 };
 
 /* every utterance the app can ever make — the render script calls this */
@@ -734,17 +742,20 @@ function allSpeech(){
   Object.keys(SPIDER_LINES).forEach(k => add(SPIDER_LINES[k], SPIDER_VOICE[k] || 'narr'));
   Object.keys(GB_LINES).forEach(k => add(GB_LINES[k], GB_VOICE[k] || 'narr'));
   Object.keys(ALICE_LINES).forEach(k => add(ALICE_LINES[k], ALICE_VOICE[k] || 'narr'));
+  Object.keys(DUCK_LINES).forEach(k => add(DUCK_LINES[k], DUCK_VOICE[k] || 'dnarr'));
   const ALLW = {};
   Object.keys(WORD_PIGS).forEach(k => ALLW[k] = WORD_PIGS[k]);
   Object.keys(WORD_SPIDER).forEach(k => ALLW[k] = WORD_SPIDER[k]);
   Object.keys(WORD_GB).forEach(k => { if(!ALLW[k]) ALLW[k] = WORD_GB[k]; });
   Object.keys(WORD_ALICE).forEach(k => { if(!ALLW[k]) ALLW[k] = WORD_ALICE[k]; });
+  Object.keys(WORD_DUCK).forEach(k => { if(!ALLW[k]) ALLW[k] = WORD_DUCK[k]; });
   Object.keys(ALLW).forEach(k => {
     const w = ALLW[k];
     if(w.star){
-      add('Say it with me. ' + w.en + '!', 'pal');
-      add('Yes! ' + w.en + '!', 'pal');
-      add(w.en + '!', 'pal');
+      const pv = WORD_DUCK[k] ? 'dpal' : 'pal';
+      add('Say it with me. ' + w.en + '!', pv);
+      add('Yes! ' + w.en + '!', pv);
+      add(w.en + '!', pv);
     }
     if(!w.reveal) { add(w.en, 'slow'); add('In Spanish, ' + w.es, 'slow'); return; }
     add(w.reveal, 'slow');
@@ -765,7 +776,7 @@ function allSpeech(){
    ========================================================= */
 const Music = {
   ctx:null, master:null, verb:null, noise:null, timer:null, step:0, started:false,
-  base:0.115, gap:430, duckTo:0.58, root:261.63,
+  base:0.155, gap:430, duckTo:0.66, root:261.63,
   /* I–V–vi–IV — the progression under almost every nursery tune */
   prog:[[0,4,7],[7,11,14],[9,12,16],[5,9,12]],
   mel :[12,16,19,16, 14,19,23,19, 21,16,12,16, 17,21,17,12],
@@ -864,44 +875,53 @@ function loadAudio(){
   AUD.ready = (async () => {
     try{
       const r = await fetch('audio/manifest.json', {cache:'force-cache'});
-      if(r.ok){ AUD.map = await r.json(); AUD.ok = Object.keys(AUD.map).length > 0; warmAudio(); }
+      if(r.ok){ AUD.map = await r.json(); AUD.ok = Object.keys(AUD.map).length > 0; }
     }catch(e){}
   })();
   return AUD.ready;
 }
-/* quietly pull the clips into cache a few at a time so nothing stutters mid-story */
-function warmAudio(){
-  const files = Object.keys(AUD.map).map(k => AUD.map[k]);
+/* Warm only what this story is about to say. Pre-fetching all 270 clips is
+   what got the host to start refusing requests in the first place. */
+function warmLines(texts){
   let i = 0;
   (function next(){
-    /* gently — hammering a static host for 270 clips at once gets throttled */
-    for(let n = 0; n < 2 && i < files.length; n++, i++){
-      const f = files[i];
-      if(AUD.cache[f]) continue;
+    if(i >= texts.length) return;
+    const f = AUD.map[texts[i++]];
+    if(f && !AUD.cache[f]){
       const a = new Audio('audio/' + f); a.preload = 'auto';
       a.onerror = () => { delete AUD.cache[f]; };
       AUD.cache[f] = a;
     }
-    if(i < files.length) setTimeout(next, 500);
+    setTimeout(next, 320);
   })();
 }
-/* resolves false if the clip could not be played, so the line can still be
-   spoken some other way rather than passing in silence */
-function playClip(file){
+function playOnce(file){
   return new Promise(res => {
     let a = AUD.cache[file];
     if(!a){ a = new Audio('audio/' + file); a.preload = 'auto'; AUD.cache[file] = a; }
     try{ a.currentTime = 0; }catch(e){}
-    Music.duck(true);
     let done = false;
     const fin = ok => { if(done) return; done = true;
-      a.onended = null; a.onerror = null; clearTimeout(tm); Music.duck(false); res(ok); };
+      a.onended = null; a.onerror = null; clearTimeout(tm); res(ok); };
     const tm = setTimeout(() => fin(true), 30000);
     a.onended = () => fin(true);
     a.onerror = () => { delete AUD.cache[file]; fin(false); };
     const pr = a.play();
     if(pr && pr.catch) pr.catch(() => { delete AUD.cache[file]; fin(false); });
   });
+}
+/* A static host will throttle a burst of small files. When that happens the
+   right answer is to wait and ask again — falling back to browser speech
+   synthesis put the robot voice back in the story. */
+async function playClip(file){
+  Music.duck(true);
+  let ok = false;
+  for(let t = 0; t < 3 && !ok && !stopFlag; t++){
+    if(t) await wait(450 * t);
+    ok = await playOnce(file);
+  }
+  Music.duck(false);
+  return ok;
 }
 
 /* ============================================================
@@ -1043,7 +1063,9 @@ function tapOrVoice(ms, opts){
 /* =========================================================
    SCENE ENGINE — declarative shots, cross-faded
    ========================================================= */
-function narrate(t){ $('narr').textContent = t; }
+/* Lines carry inline delivery cues like [sadly] for the voice renderer.
+   Those belong in the audio, never on screen. */
+function narrate(t){ $('narr').textContent = t.replace(/\[[^\]]*\]\s*/g, '').trim(); }
 async function line(text, opt){
   setSpeaker(opt && opt.k);
   narrate(text);
@@ -1133,7 +1155,7 @@ async function shot(spec){
    LIVE SCENE VIDEO — a real moving shot per beat, cross-faded.
    Two elements so the next clip can be decoding while this one plays.
    ========================================================= */
-const Vid = {slot:0};
+const Vid = {slot:0, dir:'art3'};
 const vidEl = i => $(i ? 'vidB' : 'vidA');
 
 /* pull the clips down in story order so a scene change never stalls */
@@ -1141,7 +1163,7 @@ function warmVideo(list){
   let i = 0;
   (function next(){
     if(i >= list.length) return;
-    fetch('art3/' + list[i++] + '.mp4', {cache:'force-cache'})
+    fetch(Vid.dir + '/' + list[i++] + '.mp4', {cache:'force-cache'})
       .then(r => r.arrayBuffer()).catch(()=>{})
       .then(() => setTimeout(next, 500));
   })();
@@ -1149,7 +1171,7 @@ function warmVideo(list){
 async function vshot(name){
   if(stopFlag) return;
   const cur = vidEl(Vid.slot), nxt = vidEl(Vid.slot ^ 1);
-  nxt.src = 'art3/' + name + '.mp4';
+  nxt.src = Vid.dir + '/' + name + '.mp4';
   nxt.load();
   await Promise.race([
     new Promise(r => { if(nxt.readyState >= 3) r(); else nxt.oncanplay = r; }),
@@ -1178,10 +1200,13 @@ function stopVideo(){
    the scene, the dialogue bar shows who is talking instead.
    ========================================================= */
 const palFace = () => 'art3/p-' + (S.pal === 'cat' ? 'cat2' : S.pal) + '.png';
-const FACE = {narr:palFace, pal:palFace, slow:palFace,
+const FACE = {narr:palFace, pal:palFace, slow:palFace, dnarr:palFace, dpal:palFace,
+  mum:() => 'art4/p-mum.png', duck:() => 'art4/p-duck.png', swan:() => 'art4/p-swan.png',
   rabbit:() => 'art3/p-rabbit.png', cat:() => 'art3/p-cat.png',
   queen:() => 'art3/p-queen.png',   hatter:() => 'art3/p-hatter.png'};
 const WHO = {narr:() => S.name, pal:() => S.name, slow:() => S.name,
+  dnarr:() => S.name, dpal:() => S.name,
+  mum:() => 'Mother Duck', duck:() => 'The Duckling', swan:() => 'The Swans',
   rabbit:() => 'White Rabbit', cat:() => 'Cheshire Cat',
   queen:() => 'The Queen',     hatter:() => 'Mad Hatter'};
 function setSpeaker(kind){
@@ -1680,6 +1705,7 @@ async function runGB(){
    ========================================================= */
 function tagArt(w){
   if(w.art === 'up' || w.art === 'down') return arrowArt(w.art);
+  if(STORY === 'duck'   && UGLY[w.art])  return UGLY[w.art];
   if(STORY === 'alice'  && WON[w.art])   return WON[w.art];
   if(STORY === 'gb'     && TOON[w.art])  return TOON[w.art];
   if(STORY === 'spider' && CLAY[w.art])  return CLAY[w.art];
@@ -1720,6 +1746,7 @@ function bankWord(key){
 /* say a story line with the word quietly labelled beside it.
    A few words are marked star — those get one short turn for the child to
    echo, without ever leaving the scene or dimming it. */
+const palVoice = () => STORY === 'duck' ? V.dpal : V.pal;
 async function sayWord(key, text, voice, highlightId){
   if(stopFlag) return;
   const w = WORDS[key], t = $('wtag');
@@ -1731,14 +1758,14 @@ async function sayWord(key, text, voice, highlightId){
   if(w.star){
     hideTag();
     await openSay(key);
-    await speak('Say it with me. ' + w.en + '!', V.pal);
+    await speak('Say it with me. ' + w.en + '!', palVoice());
     if(!stopFlag){
       $('wsay').classList.add('live');
       const heard = await listenForVoice(3400, {needMs:150});
       $('wsay').classList.remove('live');
       $('wsay').querySelector('.hd').textContent = heard ? 'You did it! ⭐' : 'Say it with me — ' + w.en + '!';
       $('wsay').querySelector('.ask').textContent = heard ? 'great job' : '';
-      if(!stopFlag) await speak(heard ? 'Yes! ' + w.en + '!' : w.en + '!', V.pal);
+      if(!stopFlag) await speak(heard ? 'Yes! ' + w.en + '!' : w.en + '!', palVoice());
       if(!stopFlag) await wait(420);
     }
     closeSay();
@@ -1995,6 +2022,7 @@ async function runAlice(){
   WORDS = WORD_ALICE;
   $('bookCount').textContent = learned().length;
   Music.mood('calm');
+  Vid.dir = 'art3';
   warmVideo(ALICE_CLIPS);
   paint([]);                                   // nothing is composited over the film
   $('bgPlate').style.opacity = '0';
@@ -2075,11 +2103,155 @@ async function runAlice(){
   openBook();
 }
 
+/* =========================================================
+   STORY 5 — The Ugly Duckling (anime, live video scenes)
+   Harder vocabulary than the earlier books: real nouns and two feeling
+   words, rather than positions like up and down.
+   ========================================================= */
+const DIMG = f => '<img src="art4/'+f+'" alt="" draggable="false" style="width:100%;height:auto;display:block">';
+const UGLY = {
+  feather:DIMG('w-feather.png'), pond:DIMG('w-pond.png'),   lonely:DIMG('w-lonely.png'),
+  winter: DIMG('w-winter.png'),  ice: DIMG('w-ice.png'),    spring:DIMG('w-spring.png'),
+  swan:   DIMG('w-swan.png'),    beautiful:DIMG('w-beautiful.png')
+};
+const DUCK_CLIPS = ['nest','hatch','grey','pond','laughed','lonely','leaves','geese','rain',
+  'cottage','snow','ice','barn','stars','thaw','swans','afraid','reflection','welcome','children'];
+
+const WORD_DUCK = {
+  feather:  {en:'feather',  es:'la pluma',     art:'feather',  reveal:"",reveal2:"", star:true},
+  pond:     {en:'pond',     es:'el estanque',  art:'pond',     reveal:"",reveal2:""},
+  lonely:   {en:'lonely',   es:'solo',         art:'lonely',   reveal:"",reveal2:""},
+  winter:   {en:'winter',   es:'el invierno',  art:'winter',   reveal:"",reveal2:"", star:true},
+  ice:      {en:'ice',      es:'el hielo',     art:'ice',      reveal:"",reveal2:""},
+  spring:   {en:'spring',   es:'la primavera', art:'spring',   reveal:"",reveal2:""},
+  swan:     {en:'swan',     es:'el cisne',     art:'swan',     reveal:"",reveal2:"", star:true},
+  beautiful:{en:'beautiful',es:'hermoso',      art:'beautiful',reveal:"",reveal2:""}
+};
+
+/* [square brackets] are delivery cues for the voice renderer — stripped before display */
+const DUCK_LINES = {
+  uGreet:"[warmly] This one is my favourite. It is a little bit sad at the start... [brightly] but wait until the end!",
+  uNest:"[gently] Down among the tall green reeds, a mother duck sat waiting on her nest.",
+  uHatch:"[excited] Crack! Crack! Out came three tiny yellow ducklings, all fluffy and new.",
+  uGrey:"[curiously] But the very last egg was much bigger. And out came a duckling with soft grey feathers.",
+  uMum:"[kindly] Oh! You are not yellow like the others. But you are mine, and I love you.",
+  uPond:"[warmly] The next morning, mother duck led them all down to the pond for their very first swim.",
+  uSwim:"[cheerfully] Splash! The little grey one could swim beautifully. Better than all of them!",
+  uLaughed:"[sadly] But the hens and the geese in the farmyard turned their backs on him.",
+  uWhy:"[sadly] Why does nobody want to play with me? [quietly] Nobody at all.",
+  uLonely:"[softly] And so, as the sun went down, the little duckling felt very lonely indeed.",
+  uLeaves:"[gently] He walked away, far across the marshes, as the leaves turned gold and red.",
+  uGeese:"[wistfully] High above him, the wild geese called to one another and flew away south.",
+  uRain:"[softly] When the rain came, he hid underneath a great green leaf, and waited.",
+  uCottage:"[quietly] At night he saw a warm little window glowing in the dark, and he wished he had a home.",
+  uSnow:"[gently] Then the days grew colder and colder, and winter came to the marshes.",
+  uIce:"[carefully] The pond turned to hard shining ice, and the world went very quiet.",
+  uBarn:"[warmly] A kind farmer found him shivering, and carried him into a barn full of warm straw.",
+  uStars:"[softly] And under all the winter stars, the little duckling slept, and waited, and grew.",
+  uThaw:"[brightly] Then one morning the snow began to melt. The blossom opened. Spring had come at last!",
+  uSwans:"[wonder] And there on the water were three of the most beautiful birds he had ever seen.",
+  uAfraid:"[nervously] Oh, they are so lovely. They will never want me.",
+  uLook:"[gently] But as he came closer, he looked down into the still clear water.",
+  uSee:"[amazed] And there in the water was no grey duckling at all. There was a swan!",
+  uWas:"[warmly] He had been a swan all along. He was simply not grown up yet.",
+  uWelcome:"[joyfully] The three great swans curved their necks and welcomed him. You are one of us!",
+  uEnd:"[joyfully] And the children on the bank clapped their hands and said, look, that one is the most beautiful of all!",
+  uThanks:"[warmly] He was beautiful the whole time. He just had to grow. [brightly] Look at all our new words!"
+};
+const DUCK_VOICE = {uGreet:'dpal', uThanks:'dpal', uMum:'mum', uWhy:'duck',
+                    uAfraid:'duck', uWelcome:'swan'};
+
+async function runDuck(){
+  stopFlag = false;
+  WORDS = WORD_DUCK;
+  $('bookCount').textContent = learned().length;
+  Music.mood('calm');
+  Vid.dir = 'art4';
+  warmVideo(DUCK_CLIPS);
+  paint([]);
+  $('bgPlate').style.opacity = '0';
+  $('bgRoom').style.opacity  = '0';
+  setSpeaker('dnarr');
+  const U = DUCK_LINES;
+
+  await vshot('nest');
+  await line(U.uGreet, V.dpal);   if(stopFlag) return;
+  await line(U.uNest, V.dnarr);   if(stopFlag) return;
+
+  await vshot('hatch');
+  await line(U.uHatch, V.dnarr);   if(stopFlag) return;
+
+  await vshot('grey');
+  await sayWord('feather', U.uGrey, V.dnarr);   if(stopFlag) return;
+  await line(U.uMum, V.mum);                    if(stopFlag) return;
+
+  await vshot('pond');
+  await sayWord('pond', U.uPond, V.dnarr);   if(stopFlag) return;
+  await line(U.uSwim, V.dnarr);              if(stopFlag) return;
+
+  Music.mood('tense');
+  await vshot('laughed');
+  await line(U.uLaughed, V.dnarr);   if(stopFlag) return;
+  await line(U.uWhy, V.duck);        if(stopFlag) return;
+
+  await vshot('lonely');
+  await sayWord('lonely', U.uLonely, V.dnarr);   if(stopFlag) return;
+
+  await vshot('leaves');
+  await line(U.uLeaves, V.dnarr);   if(stopFlag) return;
+
+  await vshot('geese');
+  await line(U.uGeese, V.dnarr);   if(stopFlag) return;
+
+  await vshot('rain');
+  await line(U.uRain, V.dnarr);   if(stopFlag) return;
+
+  await vshot('cottage');
+  await line(U.uCottage, V.dnarr);   if(stopFlag) return;
+
+  await vshot('snow');
+  await sayWord('winter', U.uSnow, V.dnarr);   if(stopFlag) return;
+
+  await vshot('ice');
+  await sayWord('ice', U.uIce, V.dnarr);   if(stopFlag) return;
+
+  Music.mood('calm');
+  await vshot('barn');
+  await line(U.uBarn, V.dnarr);   if(stopFlag) return;
+
+  await vshot('stars');
+  await line(U.uStars, V.dnarr);   if(stopFlag) return;
+
+  Music.mood('happy');
+  await vshot('thaw');
+  await sayWord('spring', U.uThaw, V.dnarr);   if(stopFlag) return;
+
+  await vshot('swans');
+  await sayWord('swan', U.uSwans, V.dnarr);   if(stopFlag) return;
+
+  await vshot('afraid');
+  await line(U.uAfraid, V.duck);   if(stopFlag) return;
+  await line(U.uLook, V.dnarr);    if(stopFlag) return;
+
+  await vshot('reflection');
+  await sayWord('beautiful', U.uSee, V.dnarr);   if(stopFlag) return;
+  await line(U.uWas, V.dnarr);                   if(stopFlag) return;
+
+  await vshot('welcome');
+  await line(U.uWelcome, V.swan);   if(stopFlag) return;
+
+  await vshot('children');
+  await line(U.uEnd, V.dnarr);      if(stopFlag) return;
+  await line(U.uThanks, V.dpal);    if(stopFlag) return;
+  openBook();
+}
+
 const STORIES = {
-  pigs:   {title:'The Three Little Pigs', sub:'7 words to teach',       thumb:'',                      words:WORD_PIGS,   run:runPigs},
-  spider: {title:'Itsy Bitsy Spider',     sub:'9 words · claymation',   thumb:'art/bg/bg-rainbow.jpg', pos:'center top', words:WORD_SPIDER, run:runSpider},
-  gb:     {title:'The Gingerbread Man',   sub:'a big chase · cartoon',  thumb:'art2/bg/garden.jpg',    pos:'center 42%',  words:WORD_GB,     run:runGB},
-  alice:  {title:'Alice in Wonderland',   sub:'a dream · moving film',  thumb:'art3/poster.jpg',       pos:'center 30%',  words:WORD_ALICE,  run:runAlice, portrait:true}
+  pigs:   {title:'The Three Little Pigs', sub:'7 words to teach',       thumb:'',                      words:WORD_PIGS,   run:runPigs,   lines:LINE},
+  spider: {title:'Itsy Bitsy Spider',     sub:'9 words · claymation',   thumb:'art/bg/bg-rainbow.jpg', pos:'center top', words:WORD_SPIDER, run:runSpider, lines:SPIDER_LINES},
+  gb:     {title:'The Gingerbread Man',   sub:'a big chase · cartoon',  thumb:'art2/bg/garden.jpg',    pos:'center 42%',  words:WORD_GB,     run:runGB,     lines:GB_LINES},
+  alice:  {title:'Alice in Wonderland',   sub:'a dream · moving film',  thumb:'art3/poster.jpg',       pos:'center 30%',  words:WORD_ALICE,  run:runAlice,  lines:ALICE_LINES, portrait:true},
+  duck:   {title:'The Ugly Duckling',    sub:'four seasons · anime',   thumb:'art4/poster.jpg',       pos:'center 40%',  words:WORD_DUCK,   run:runDuck,   lines:DUCK_LINES,  portrait:true}
 };
 let STORY = 'pigs';
 function buildStoryPicker(){
@@ -2110,6 +2282,7 @@ function buildStoryPicker(){
 function runActive(){
   initStage();
   const st = STORIES[STORY];
+  if(AUD.ok && st.lines) warmLines(Object.keys(st.lines).map(k => st.lines[k]));
   $('speaker').classList.toggle('on', !!st.portrait);
   $('bar').classList.toggle('hasFace', !!st.portrait);
   if(!st.portrait) stopVideo();
@@ -2125,7 +2298,8 @@ function openBook(){
   try{ speechSynthesis.cancel(); }catch(e){}
   closeSay(); hideTag();
   stopVideo();
-  $('bookPal').innerHTML = STORY === 'alice'  ? AIMG('p-' + (S.pal==='cat'?'cat2':S.pal) + '.png')
+  $('bookPal').innerHTML = STORY === 'duck'   ? DIMG('p-' + (S.pal==='cat'?'cat2':S.pal) + '.png')
+                         : STORY === 'alice'  ? AIMG('p-' + (S.pal==='cat'?'cat2':S.pal) + '.png')
                          : STORY === 'gb'     ? TOON.pal[S.pal]
                          : STORY === 'spider' ? CLAY.pal[S.pal] : ART[S.pal];
   $('bookTitle').textContent = S.name + '’s Word Book';

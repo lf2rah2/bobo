@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Which voice?</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;font-family:ui-rounded,'SF Pro Rounded',-apple-system,'Segoe UI',system-ui,sans-serif;
+    background:#F3EEE4;color:#28353E;padding:22px 18px calc(30px + env(safe-area-inset-bottom))}
+  h1{font-size:23px;margin:0 0 4px}
+  p.sub{margin:0 0 22px;font-size:14.5px;color:#7C8790;line-height:1.5}
+  h2{font-size:13px;letter-spacing:.6px;text-transform:uppercase;color:#9AA4AB;margin:26px 0 10px}
+  .row{background:#fff;border-radius:18px;padding:13px 15px;margin-bottom:10px;
+    box-shadow:0 3px 0 rgba(0,0,0,.06);display:flex;align-items:center;gap:13px}
+  .row.bad{background:#FFF1EC}
+  .row b{display:block;font-size:16px;font-weight:600}
+  .row span{display:block;font-size:12.5px;color:#8B959C;margin-top:1px}
+  button{flex-shrink:0;width:52px;height:52px;border-radius:50%;border:none;background:#E86A4E;
+    color:#fff;font-size:19px;font-family:inherit;cursor:pointer}
+  button.playing{background:#2F7D6E}
+  .note{font-size:13.5px;color:#7C8790;line-height:1.55;background:#EAE3D6;
+    border-radius:14px;padding:13px 15px;margin-top:8px}
+</style></head><body>
+
+<h1>Which voice should read the stories?</h1>
+<p class="sub">Same lines, different readers. Tap to hear each one, then tell me the name you want.</p>
+
+<h2>What you heard in Alice</h2>
+<div class="row bad">
+  <button data-f="voices/old-openai.mp3">▶</button>
+  <div><b>The old voice</b><span>OpenAI · one tone set for a whole line</span></div>
+</div>
+<div class="note">Some of what you heard was worse than this — a bug made lines fall back to your
+phone's own built-in speech, which is the flat robot sound. That is fixed.</div>
+
+<h2>Storyteller — reads the story</h2>
+<div id="narr"></div>
+
+<h2>Character voices</h2>
+<div id="char"></div>
+
+<div class="note">These can say things like <b>[sadly]</b>, <b>[whispers]</b> or <b>[excited]</b>
+in the middle of a sentence, so the reading changes as the story changes — the old one
+could only hold one mood for the whole line.</div>
+
+<script>
+const SET = [
+  {n:'narr-lily',      lab:'Lily',      d:'British · warm and gentle',   g:'narr'},
+  {n:'narr-matilda',   lab:'Matilda',   d:'warm · mature storyteller',   g:'narr'},
+  {n:'narr-alice',     lab:'Alice',     d:'British · bright and clear',  g:'narr'},
+  {n:'narr-charlotte', lab:'Charlotte', d:'soft · low and cosy',         g:'narr'},
+  {n:'char-jessica',   lab:'Jessica',   d:'the little duckling',         g:'char'},
+  {n:'char-river',     lab:'River',     d:'the little duckling',         g:'char'},
+  {n:'char-will',      lab:'Will',      d:'a kind farm animal',          g:'char'}
+];
+SET.forEach(s => {
+  const d = document.createElement('div');
+  d.className = 'row';
+  d.innerHTML = '<button data-f="voices/'+s.n+'.mp3">▶</button>' +
+                '<div><b>'+s.lab+'</b><span>'+s.d+'</span></div>';
+  document.getElementById(s.g).appendChild(d);
+});
+let cur = null, curBtn = null;
+document.addEventListener('click', e => {
+  const b = e.target.closest('button[data-f]');
+  if(!b) return;
+  if(cur){ cur.pause(); if(curBtn){ curBtn.textContent = '▶'; curBtn.classList.remove('playing'); } }
+  if(curBtn === b){ cur = null; curBtn = null; return; }
+  cur = new Audio(b.dataset.f);
+  curBtn = b; b.textContent = '❚❚'; b.classList.add('playing');
+  cur.onended = () => { b.textContent = '▶'; b.classList.remove('playing'); cur = null; curBtn = null; };
+  cur.play();
+});
+</script>
+</body></html>
