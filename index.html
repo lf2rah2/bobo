@@ -142,6 +142,8 @@ body{
   opacity:0;transition:opacity .62s ease;background:#0C1418}
 .vid.on{opacity:1}
 
+
+
 /* ===== speaker portrait — who is talking, game dialogue style.
    Used by stories that keep the companion out of the scene. ===== */
 #speaker{display:none;position:absolute;left:16px;top:-30px;z-index:9;
@@ -243,6 +245,37 @@ body{
 .kc .e{font-size:10.5px;font-weight:500;color:#2F7D6E}
 .kc.locked{background:rgba(255,255,255,.45);box-shadow:none}
 .kc.locked .w,.kc.locked .e{color:#BCAF98}
+
+/* ===== HELD SIDEWAYS =====
+   The art is composed portrait. Turned sideways the stage goes short and
+   wide, and object-fit:cover cropped each scene to a letterbox strip — the
+   picture was right, the frame was wrong. In landscape the story becomes a
+   row instead: picture on the left at full height, dialogue as a side
+   panel, and the video is contained so nothing is ever cut off. */
+@media (orientation:landscape) and (max-height:620px){
+  #root{max-width:none}
+  .screen.on{flex-direction:row}
+  #stage{order:1;min-width:0}
+  #bar{order:2;width:40%;max-width:360px;height:100%;min-height:0;flex-shrink:0;
+    border-radius:26px 0 0 26px;padding:16px 20px;
+    box-shadow:-7px 0 22px rgba(0,0,0,.13)}
+  #bar.hasFace{padding-left:20px}
+  #narr{font-size:17px}
+  .vid{object-fit:contain;background:#0E1519}
+  #speaker{position:static;flex-direction:row;align-items:center;width:auto;
+    gap:10px;margin-bottom:12px}
+  #spFace{width:46px;height:46px}
+  #spName{max-width:none;text-align:left}
+  #skip{right:14px;bottom:10px}
+  #wsay{padding:10px 14px;border-radius:24px 24px 0 0}
+  #wsay .hd{font-size:15px;margin-bottom:6px}
+  #wsay .row{gap:16px}
+  #wsay .pic{width:64px;height:64px;border-radius:20px}
+  #wsay .tx b{font-size:27px}
+  #wsay .es{font-size:15px}
+  #wsay .mic{margin-top:6px;font-size:13px}
+  #layer.lift{transform:none}
+}
 </style>
 </head>
 <body>
