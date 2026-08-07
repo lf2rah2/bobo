@@ -2762,13 +2762,14 @@ function buildNameScreen(){
 $('titlePal').innerHTML = ART[S.pal];
 if(totalLearned()) $('resetBtn').style.display = 'block';
 
+loadAudio();   // no gesture needed for a JSON fetch, so never race the first line
 $('startBtn').onclick = async () => {
   // unlock audio inside the user gesture (iOS requirement)
   try{ speechSynthesis.cancel(); speechSynthesis.speak(new SpeechSynthesisUtterance(' ')); }catch(e){}
   if(!voicesReady) loadVoices();
   Mic.init();      // fire inside the gesture so the prompt shows — but never wait for it
   Music.start();   // audio contexts may only start from a gesture
-  loadAudio();
+  loadAudio();          // already in flight from page load; harmless if repeated
   initStage();
   buildStoryPicker();
   goTo('sStory0');
