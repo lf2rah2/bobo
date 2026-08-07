@@ -699,16 +699,10 @@ Object.keys(_ARTSRC).forEach(k => Object.defineProperty(ART, k, {
 const WORD_PIGS = {
   pig:     {en:'pig',     es:'el cerdito',    art:'pig',
             reveal:"It's a little pig!",                      reveal2:"That was a pig. I will remember!"},
-  straw:   {en:'straw',   es:'la paja',       art:'straw',
-            reveal:"That house is made of straw.",            reveal2:"Straw. I will remember that!"},
   sticks:  {en:'sticks',  es:'los palos',     art:'sticks',
             reveal:"That house is made of sticks.",           reveal2:"Sticks. I will remember that!"},
-  bricks:  {en:'bricks',  es:'los ladrillos', art:'bricks',
-            reveal:"That house is made of strong bricks.",    reveal2:"Bricks. I will remember that!"},
   wolf:    {en:'wolf',    es:'el lobo',       art:'wolf',
             reveal:"It's a big bad wolf!",                    reveal2:"That was a wolf. I will remember!"},
-  chimney: {en:'chimney', es:'la chimenea',   art:'chimney',
-            reveal:"That is the chimney, on top of the roof.",reveal2:"A chimney. I will remember that!"},
   pot:     {en:'pot',     es:'la olla',       art:'pot',
             reveal:"It's a big hot pot!",                     reveal2:"A pot. I will remember that!"}
 };
@@ -1497,7 +1491,6 @@ async function runPigs(){
   await shot(meadow([{a:ART.straw, l:'2%', b:'36%', w:100, anim:'rise'}].concat(pigs3, [pal({l:'3%', b:'3%', w:72})])));
   await line(LINE.straw, V.narr);
   if(stopFlag) return;
-  await wordMoment('straw');
   if(stopFlag) return;
 
   await shot(meadow([
@@ -1516,7 +1509,6 @@ async function runPigs(){
   ].concat(pigs3, [pal({l:'3%', b:'3%', w:72})])));
   await line(LINE.bricks, V.narr);
   if(stopFlag) return;
-  await wordMoment('bricks');
   if(stopFlag) return;
 
   /* ---- 5. dusk — the wolf arrives ---- */
@@ -1589,7 +1581,6 @@ async function runPigs(){
     {a:ART.wolf, l:'6%', b:'5%', w:112, cls:'climb', z:4, id:'wolfRoof'},
     pal({r:'5%', b:'4%', w:86, z:5})
   ]});
-  await wordMoment('chimney');
   if(stopFlag) return;
   await line(LINE.climb, V.narr);
   if(el('wolfRoof')) el('wolfRoof').classList.add('shootOut');
@@ -1661,13 +1652,11 @@ const SET = {};
 /* star = the child gets a turn to say this one. Three per story, spread out:
    early, middle and late, and all easy for a three-year-old to pronounce. */
 const WORD_GB = {
-  oven:     {en:'oven',  es:'el horno',   art:'oven',  reveal:"", reveal2:""},
+  oven:     {en:'oven',  es:'el horno',   art:'oven',  reveal:"", reveal2:"", star:true},
   run:      {en:'run',   es:'correr',     art:'run',   reveal:"", reveal2:"", star:true},
-  cow:      {en:'cow',   es:'la vaca',    art:'cow',   reveal:"", reveal2:""},
-  horse:    {en:'horse', es:'el caballo', art:'horse', reveal:"", reveal2:"", star:true},
-  fast:     {en:'fast',  es:'rápido',     art:'fast',  reveal:"", reveal2:""},
-  river:    {en:'river', es:'el río',     art:'river', reveal:"", reveal2:"", star:true},
-  fox:      {en:'fox',   es:'el zorro',   art:'fox',   reveal:"", reveal2:""},
+  cow:      {en:'cow',   es:'la vaca',    art:'cow',   reveal:"", reveal2:"", star:true},
+  fast:     {en:'fast',  es:'rápido',     art:'fast',  reveal:"", reveal2:"", star:true},
+  fox:      {en:'fox',   es:'el zorro',   art:'fox',   reveal:"", reveal2:"", star:true},
   home:     {en:'home',  es:'la casa',    art:'home',  reveal:"", reveal2:"", star:true}
 };
 const GB_LINES = {
@@ -1769,7 +1758,7 @@ async function runGB(){
     fit('horse', {ch:.24, cx:.28, b:.16, cls:'brz', anim:'rise', z:3, id:'theHorse', flip:true}),
     fit('gbRun', {ch:.21, cx:.78, b:.05, anim:'slideR', z:5})
   ]});
-  await sayWord('horse', G.gHorse, V.narr, 'theHorse');   if(stopFlag) return;
+  await line(G.gHorse, V.narr);   if(stopFlag) return;
   await line(G.gHorseSay, V.vhorse);                       if(stopFlag) return;
 
   /* 9 — the farmyard  [word: fast] */
@@ -1792,7 +1781,7 @@ async function runGB(){
     fit('gbWorried', {ch:.34, cx:.34, b:.08, anim:'rise', z:5}),
     fit('pal',       {ch:.19, cx:.80, b:.06, cls:'pal', anim:'rise', z:4, id:'pal'})
   ]});
-  await sayWord('river', G.gRiver, V.narr);   if(stopFlag) return;
+  await line(G.gRiver, V.narr);   if(stopFlag) return;
   await line(G.gStuck, V.narr);               if(stopFlag) return;
 
   /* 12 — the fox  [word: fox] */
@@ -1922,22 +1911,14 @@ async function sayWord(key, text, voice, highlightId){
 const WORD_SPIDER = {
   spider:  {en:'spider',  es:'la araña',    art:'spider',
             reveal:"That's a little spider!",            reveal2:"A spider. I will remember that!"},
-  spout:   {en:'spout',   es:'el canalón',  art:'spout',
-            reveal:"That is the water spout, a big metal pipe.", reveal2:"A spout. I will remember that!"},
   up:      {en:'up',      es:'arriba',      art:'up',
             reveal:"She is going up, up, up!",           reveal2:"Up. I will remember that!"},
-  cloud:   {en:'cloud',   es:'la nube',     art:'cloud',
-            reveal:"That's a big grey rain cloud.",      reveal2:"A cloud. I will remember that!"},
   rain:    {en:'rain',    es:'la lluvia',   art:'rain',
             reveal:"That's the rain, falling down.",     reveal2:"Rain. I will remember that!"},
-  down:    {en:'down',    es:'abajo',       art:'down',
-            reveal:"Oh no, she washed all the way down!",reveal2:"Down. I will remember that!"},
   sun:     {en:'sun',     es:'el sol',      art:'sun',
             reveal:"Here comes the warm yellow sun!",    reveal2:"The sun. I will remember that!"},
   web:     {en:'web',     es:'la telaraña', art:'web',
-            reveal:"She made a beautiful spider web.",   reveal2:"A web. I will remember that!"},
-  rainbow: {en:'rainbow', es:'el arcoíris', art:'rainbow',
-            reveal:"Look, a rainbow in the sky!",        reveal2:"A rainbow. I will remember that!"}
+            reveal:"She made a beautiful spider web.",   reveal2:"A web. I will remember that!"}
 };
 const SPIDER_LINES = {
   sGreet:"Hello again! This one is my favourite. Will you help me learn?",
@@ -1987,7 +1968,6 @@ async function runSpider(){
   ]});
   await line(SPIDER_LINES.sSpout, V.narr);
   if(stopFlag) return;
-  await wordMoment('spout');
   if(stopFlag) return;
   await line(SPIDER_LINES.sWant, V.narr);
   if(stopFlag) return;
@@ -2011,7 +1991,6 @@ async function runSpider(){
   ]});
   await line(SPIDER_LINES.sCloud, V.narr);
   if(stopFlag) return;
-  await wordMoment('cloud');
   if(stopFlag) return;
 
   /* 5 — down came the rain */
@@ -2035,7 +2014,6 @@ async function runSpider(){
   ]});
   await line(SPIDER_LINES.sDown, V.narr);
   if(stopFlag) return;
-  await wordMoment('down');
   if(stopFlag) return;
 
   /* 7 — blow the clouds away */
@@ -2088,7 +2066,6 @@ async function runSpider(){
   if(stopFlag) return;
   await wordMoment('web');
   if(stopFlag) return;
-  await wordMoment('rainbow');
   if(stopFlag) return;
   await line(SPIDER_LINES.sEnd, V.narr);
   if(stopFlag) return;
@@ -2114,12 +2091,11 @@ const ALICE_CLIPS = ['riverbank','rabbit','chase','hole','falling','fallthings',
 
 const WORD_ALICE = {
   rabbit:   {en:'rabbit',es:'el conejo', art:'rabbit',reveal:"",reveal2:"", star:true},
-  hole:     {en:'hole',  es:'el agujero',art:'hole',  reveal:"",reveal2:""},
+  hole:     {en:'hole',  es:'el agujero',art:'hole',  reveal:"",reveal2:"", star:true},
   key:      {en:'key',   es:'la llave',  art:'key',   reveal:"",reveal2:"", star:true},
-  small:    {en:'small', es:'pequeño',   art:'small', reveal:"",reveal2:""},
-  big:      {en:'big',   es:'grande',    art:'big',   reveal:"",reveal2:""},
+  big:      {en:'big',   es:'grande',    art:'big',   reveal:"",reveal2:"", star:true},
   cat:      {en:'cat',   es:'el gato',   art:'cat',   reveal:"",reveal2:"", star:true},
-  tea:      {en:'tea',   es:'el té',     art:'tea',   reveal:"",reveal2:""},
+  tea:      {en:'tea',   es:'el té',     art:'tea',   reveal:"",reveal2:"", star:true},
   queen:    {en:'queen', es:'la reina',  art:'queen', reveal:"",reveal2:"", star:true}
 };
 const ALICE_LINES = {
@@ -2203,7 +2179,7 @@ async function runAlice(){
   await line(A.aBottle, V.narr);   if(stopFlag) return;
 
   await vshot('shrunk');
-  await sayWord('small', A.aShrink, V.narr);   if(stopFlag) return;
+  await line(A.aShrink, V.narr);   if(stopFlag) return;
 
   await vshot('big');
   await sayWord('big', A.aCake, V.narr);   if(stopFlag) return;
@@ -2256,13 +2232,10 @@ const DUCK_CLIPS = ['nest','hatch','grey','pond','laughed','lonely','leaves','ge
 
 const WORD_DUCK = {
   feather:  {en:'feather',  es:'la pluma',     art:'feather',  reveal:"",reveal2:"", star:true},
-  pond:     {en:'pond',     es:'el estanque',  art:'pond',     reveal:"",reveal2:""},
   lonely:   {en:'lonely',   es:'solo',         art:'lonely',   reveal:"",reveal2:"", star:true},
-  winter:   {en:'winter',   es:'el invierno',  art:'winter',   reveal:"",reveal2:""},
-  ice:      {en:'ice',      es:'el hielo',     art:'ice',      reveal:"",reveal2:"", star:true},
-  spring:   {en:'spring',   es:'la primavera', art:'spring',   reveal:"",reveal2:""},
+  winter:   {en:'winter',   es:'el invierno',  art:'winter',   reveal:"",reveal2:"", star:true},
   swan:     {en:'swan',     es:'el cisne',     art:'swan',     reveal:"",reveal2:"", star:true},
-  beautiful:{en:'beautiful',es:'hermoso',      art:'beautiful',reveal:"",reveal2:""}
+  beautiful:{en:'beautiful',es:'hermoso',      art:'beautiful',reveal:"",reveal2:"", star:true}
 };
 
 /* [square brackets] are delivery cues for the voice renderer — stripped before display */
@@ -2324,7 +2297,7 @@ async function runDuck(){
   await line(U.uMum, V.mum);                    if(stopFlag) return;
 
   await vshot('pond');
-  await sayWord('pond', U.uPond, V.dnarr);   if(stopFlag) return;
+  await line(U.uPond, V.dnarr);   if(stopFlag) return;
   await line(U.uSwim, V.dnarr);              if(stopFlag) return;
 
   Music.mood('tense');
@@ -2351,7 +2324,7 @@ async function runDuck(){
   await sayWord('winter', U.uSnow, V.dnarr);   if(stopFlag) return;
 
   await vshot('ice');
-  await sayWord('ice', U.uIce, V.dnarr);   if(stopFlag) return;
+  await line(U.uIce, V.dnarr);   if(stopFlag) return;
 
   Music.mood('calm');
   await vshot('barn');
@@ -2362,7 +2335,7 @@ async function runDuck(){
 
   Music.mood('happy');
   await vshot('thaw');
-  await sayWord('spring', U.uThaw, V.dnarr);   if(stopFlag) return;
+  await line(U.uThaw, V.dnarr);   if(stopFlag) return;
 
   await vshot('swans');
   await sayWord('swan', U.uSwans, V.dnarr);   if(stopFlag) return;
@@ -2401,12 +2374,9 @@ const MOMO_CLIPS = ['village','river','peach','carry','crack','grow','brave','du
 
 const WORD_MOMO = {
   peach:    {en:'peach',   es:'el melocotón', art:'peach',   reveal:"",reveal2:"", star:true},
-  brave:    {en:'brave',   es:'valiente',     art:'brave',   reveal:"",reveal2:""},
-  journey:  {en:'journey', es:'el viaje',     art:'journey', reveal:"",reveal2:""},
-  mountain: {en:'mountain',es:'la montaña',   art:'mountain',reveal:"",reveal2:"", star:true},
-  friend:   {en:'friend',  es:'el amigo',     art:'friend',  reveal:"",reveal2:""},
+  brave:    {en:'brave',   es:'valiente',     art:'brave',   reveal:"",reveal2:"", star:true},
+  friend:   {en:'friend',  es:'el amigo',     art:'friend',  reveal:"",reveal2:"", star:true},
   boat:     {en:'boat',    es:'el barco',     art:'boat',    reveal:"",reveal2:"", star:true},
-  island:   {en:'island',  es:'la isla',      art:'island',  reveal:"",reveal2:""},
   treasure: {en:'treasure',es:'el tesoro',    art:'treasure',reveal:"",reveal2:"", star:true}
 };
 
@@ -2483,13 +2453,13 @@ async function runMomo(){
   await line(M.mBrave, V.momo);                  if(stopFlag) return;
 
   await vshot('dumplings');
-  await sayWord('journey', M.mDump, V.gran);   if(stopFlag) return;
+  await line(M.mDump, V.gran);   if(stopFlag) return;
 
   await vshot('farewell');
   await line(M.mBye, V.mnarr);   if(stopFlag) return;
 
   await vshot('mountain');
-  await sayWord('mountain', M.mMountain, V.mnarr);   if(stopFlag) return;
+  await line(M.mMountain, V.mnarr);   if(stopFlag) return;
 
   await vshot('dog');
   await sayWord('friend', M.mDog, V.mnarr);   if(stopFlag) return;
@@ -2512,7 +2482,7 @@ async function runMomo(){
   await sayWord('boat', M.mBoat, V.mnarr);   if(stopFlag) return;
 
   await vshot('island');
-  await sayWord('island', M.mIsland, V.mnarr);   if(stopFlag) return;
+  await line(M.mIsland, V.mnarr);   if(stopFlag) return;
 
   Music.mood('tense');
   await vshot('giants');
@@ -2545,12 +2515,11 @@ const SOUP_CLIPS = ['road','traveller','village','shutters','hide','knock','hung
 
 const WORD_SOUP = {
   village:  {en:'village',  es:'el pueblo',     art:'village',  reveal:"",reveal2:"", star:true},
-  hungry:   {en:'hungry',   es:'hambriento',    art:'hungry',   reveal:"",reveal2:""},
+  hungry:   {en:'hungry',   es:'hambriento',    art:'hungry',   reveal:"",reveal2:"", star:true},
   stone:    {en:'stone',    es:'la piedra',     art:'stone',    reveal:"",reveal2:"", star:true},
-  stir:     {en:'stir',     es:'remover',       art:'stir',     reveal:"",reveal2:""},
+  stir:     {en:'stir',     es:'remover',       art:'stir',     reveal:"",reveal2:"", star:true},
   carrot:   {en:'carrot',   es:'la zanahoria',  art:'carrot',   reveal:"",reveal2:"", star:true},
-  delicious:{en:'delicious',es:'delicioso',     art:'delicious',reveal:"",reveal2:""},
-  feast:    {en:'feast',    es:'el banquete',   art:'feast',    reveal:"",reveal2:""},
+  delicious:{en:'delicious',es:'delicioso',     art:'delicious',reveal:"",reveal2:"", star:true},
   share:    {en:'share',    es:'compartir',     art:'share',    reveal:"",reveal2:"", star:true}
 };
 
@@ -2656,7 +2625,7 @@ async function runSoup(){
   await sayWord('delicious', U.sDelicious, V.unarr);   if(stopFlag) return;
 
   await vshot('feast');
-  await sayWord('feast', U.sFeast, V.unarr);   if(stopFlag) return;
+  await line(U.sFeast, V.unarr);   if(stopFlag) return;
   await line(U.sNight, V.unarr);                 if(stopFlag) return;
 
   await vshot('share');
