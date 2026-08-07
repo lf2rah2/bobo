@@ -136,6 +136,10 @@ body{
   box-shadow:0 -6px 22px rgba(0,0,0,.13);min-height:118px;display:flex;flex-direction:column;justify-content:center;position:relative;z-index:8;
 }
 #narr{font-size:19px;line-height:1.36;font-weight:500;color:#28353E;text-align:center}
+#bar.waiting #narr{opacity:.45;transition:opacity .25s}
+#bar.waiting::after{content:'';position:absolute;left:50%;bottom:6px;width:34px;height:5px;
+  margin-left:-17px;border-radius:3px;background:#CBD5DB;animation:waitDots 1s ease-in-out infinite}
+@keyframes waitDots{0%,100%{opacity:.25;transform:scaleX(.6)}50%{opacity:.9;transform:scaleX(1)}}
 
 /* ===== live scene video ===== */
 .vid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
@@ -912,7 +916,7 @@ const Music = {
 /* =========================================================
    AUDIO — pre-rendered narration, browser TTS as fallback
    ========================================================= */
-const AUD = {ok:false, map:{}, cache:{}, ready:null};
+const AUD = {ok:false, map:{}, ready:null, src:null, el:null};
 function loadAudio(){
   AUD.ready = (async () => {
     try{
@@ -922,48 +926,66 @@ function loadAudio(){
   })();
   return AUD.ready;
 }
-/* Warm only what this story is about to say. Pre-fetching all 270 clips is
-   what got the host to start refusing requests in the first place. */
+/* Warm only the HTTP cache for the lines this story is about to say. Deliberately
+   NOT media elements — see below. */
 function warmLines(texts){
   let i = 0;
   (function next(){
     if(i >= texts.length) return;
     const f = AUD.map[texts[i++]];
-    if(f && !AUD.cache[f]){
-      const a = new Audio('audio/' + f); a.preload = 'auto';
-      a.onerror = () => { delete AUD.cache[f]; };
-      AUD.cache[f] = a;
-    }
+    if(f) fetch('audio/' + f, {cache:'force-cache'}).catch(()=>{});
     setTimeout(next, 320);
   })();
 }
-function playOnce(file){
+
+/* ---------------------------------------------------------------
+   Narration plays through Web Audio, not <audio> elements.
+   The old code made one Audio per line and kept it. A phone caps how many
+   media elements a page may hold, so a story sailed through its opening and
+   then, once the cap was reached, every remaining line failed to load and
+   dropped to browser speech — the dull voice, always partway in. Web Audio
+   has no such cap, and the AudioContext is already unlocked by the start tap.
+   --------------------------------------------------------------- */
+async function clipBuffer(file){
+  for(let t = 0; t < 4 && !stopFlag; t++){
+    try{
+      const r = await fetch('audio/' + file, {cache:'force-cache'});
+      if(!r.ok) throw new Error(r.status);
+      return await Music.ctx.decodeAudioData(await r.arrayBuffer());
+    }catch(e){ await wait(300 * (t + 1)); }
+  }
+  return null;
+}
+function playBuffer(buf){
   return new Promise(res => {
-    let a = AUD.cache[file];
-    if(!a){ a = new Audio('audio/' + file); a.preload = 'auto'; AUD.cache[file] = a; }
-    try{ a.currentTime = 0; }catch(e){}
+    const s = Music.ctx.createBufferSource();
+    s.buffer = buf;
+    s.connect(Music.ctx.destination);
+    AUD.src = s;
+    s.onended = () => { if(AUD.src === s) AUD.src = null; res(true); };
+    try{ s.start(); }catch(e){ res(false); }
+  });
+}
+/* fallback for anything without a usable AudioContext: ONE shared element */
+function playElement(file){
+  return new Promise(res => {
+    const a = AUD.el || (AUD.el = new Audio());
     let done = false;
     const fin = ok => { if(done) return; done = true;
       a.onended = null; a.onerror = null; clearTimeout(tm); res(ok); };
     const tm = setTimeout(() => fin(true), 30000);
     a.onended = () => fin(true);
-    a.onerror = () => { delete AUD.cache[file]; fin(false); };
+    a.onerror = () => fin(false);
+    a.src = 'audio/' + file;
     const pr = a.play();
-    if(pr && pr.catch) pr.catch(() => { delete AUD.cache[file]; fin(false); });
+    if(pr && pr.catch) pr.catch(() => fin(false));
   });
 }
-/* A static host will throttle a burst of small files. When that happens the
-   right answer is to wait and ask again — falling back to browser speech
-   synthesis put the robot voice back in the story. */
-async function playClip(file){
-  Music.duck(true);
-  let ok = false;
-  for(let t = 0; t < 5 && !ok && !stopFlag; t++){
-    if(t) await wait(400 * t);
-    ok = await playOnce(file);
-  }
-  Music.duck(false);
-  return ok;
+function stopSpeech(){
+  try{ if(AUD.src) AUD.src.stop(); }catch(e){}
+  AUD.src = null;
+  try{ if(AUD.el) AUD.el.pause(); }catch(e){}
+  try{ speechSynthesis.cancel(); }catch(e){}
 }
 
 /* ============================================================
@@ -1019,7 +1041,21 @@ function webSpeak(text, opt){
 async function speak(text, opt){
   if(!AUD.ok && AUD.ready) await Promise.race([AUD.ready, wait(2500)]);
   const f = AUD.ok && AUD.map[text];
-  if(f && await playClip(f)) return;
+  if(f){
+    /* if a clip is slow to arrive, show it rather than going quietly wrong */
+    const slow = setTimeout(() => $('bar').classList.add('waiting'), 500);
+    let ok = false;
+    if(Music.ctx){
+      const buf = await clipBuffer(f);
+      if(buf && !stopFlag){ Music.duck(true); ok = await playBuffer(buf); Music.duck(false); }
+    } else {
+      Music.duck(true);
+      for(let t = 0; t < 3 && !ok && !stopFlag; t++){ if(t) await wait(400*t); ok = await playElement(f); }
+      Music.duck(false);
+    }
+    clearTimeout(slow); $('bar').classList.remove('waiting');
+    if(ok || stopFlag) return;
+  }
   return webSpeak(text, opt);
 }
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -2504,7 +2540,7 @@ function runActive(){
    ============================================================ */
 function openBook(){
   stopFlag = true;
-  try{ speechSynthesis.cancel(); }catch(e){}
+  stopSpeech();
   closeSay(); hideTag();
   stopVideo();
   $('bookPal').innerHTML = STORY === 'momo'   ? MIMG('p-' + S.pal + '.png')
@@ -2592,7 +2628,7 @@ $('bookBtn').onclick = openBook;
 $('againBtn').onclick = () => { runActive(); };
 $('homeBtn').onclick = () => {
   stopFlag = true;
-  try{ speechSynthesis.cancel(); }catch(e){}
+  stopSpeech();
   closeSay(); hideTag(); stopVideo();
   $('titlePal').innerHTML = ART[S.pal];
   if(totalLearned()) $('resetBtn').style.display = 'block';
@@ -2600,7 +2636,7 @@ $('homeBtn').onclick = () => {
   goTo('sTitle');
 };
 $('skip').onclick = () => {
-  try{ speechSynthesis.cancel(); }catch(e){}   // cuts the current line; story continues
+  stopSpeech();   // cuts the current line; story continues
 };
 $('micDot').onclick = () => {};
 
