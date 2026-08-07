@@ -755,6 +755,13 @@ const V = {
      speaker kinds are distinct — that is how the renderer knows which
      engine each line belongs to. */
   dnarr:{rate:.86, pitch:1.0,  k:'dnarr'},
+  mnarr:{rate:.86, pitch:1.0,  k:'mnarr'},
+  mpal :{rate:.94, pitch:1.5,  k:'mpal'},
+  momo :{rate:.96, pitch:1.35, k:'momo'},
+  gran :{rate:.86, pitch:1.05, k:'gran'},
+  dog  :{rate:.98, pitch:1.1,  k:'dog'},
+  monkey:{rate:1.04,pitch:1.45,k:'monkey'},
+  giant:{rate:.82, pitch:.8,   k:'giant'},
   dpal :{rate:.94, pitch:1.5,  k:'dpal'},
   mum  :{rate:.88, pitch:1.05, k:'mum'},
   duck :{rate:.95, pitch:1.4,  k:'duck'},
@@ -776,16 +783,18 @@ function allSpeech(){
   Object.keys(GB_LINES).forEach(k => add(GB_LINES[k], GB_VOICE[k] || 'narr'));
   Object.keys(ALICE_LINES).forEach(k => add(ALICE_LINES[k], ALICE_VOICE[k] || 'narr'));
   Object.keys(DUCK_LINES).forEach(k => add(DUCK_LINES[k], DUCK_VOICE[k] || 'dnarr'));
+  Object.keys(MOMO_LINES).forEach(k => add(MOMO_LINES[k], MOMO_VOICE[k] || 'mnarr'));
   const ALLW = {};
   Object.keys(WORD_PIGS).forEach(k => ALLW[k] = WORD_PIGS[k]);
   Object.keys(WORD_SPIDER).forEach(k => ALLW[k] = WORD_SPIDER[k]);
   Object.keys(WORD_GB).forEach(k => { if(!ALLW[k]) ALLW[k] = WORD_GB[k]; });
   Object.keys(WORD_ALICE).forEach(k => { if(!ALLW[k]) ALLW[k] = WORD_ALICE[k]; });
   Object.keys(WORD_DUCK).forEach(k => { if(!ALLW[k]) ALLW[k] = WORD_DUCK[k]; });
+  Object.keys(WORD_MOMO).forEach(k => { if(!ALLW[k]) ALLW[k] = WORD_MOMO[k]; });
   Object.keys(ALLW).forEach(k => {
     const w = ALLW[k];
     if(w.star){
-      const pv = WORD_DUCK[k] ? 'dpal' : 'pal';
+      const pv = WORD_DUCK[k] ? 'dpal' : WORD_MOMO[k] ? 'mpal' : 'pal';
       add('Say it with me. ' + w.en + '!', pv);
       add('Yes! ' + w.en + '!', pv);
       add(w.en + '!', pv);
@@ -1245,11 +1254,17 @@ function stopVideo(){
    ========================================================= */
 const palFace = () => 'art3/p-' + (S.pal === 'cat' ? 'cat2' : S.pal) + '.png';
 const FACE = {narr:palFace, pal:palFace, slow:palFace, dnarr:palFace, dpal:palFace,
+  mnarr:palFace, mpal:palFace,
+  momo:() => 'art5/p-momo.png',   gran:() => 'art5/p-gran.png',
+  dog:() => 'art5/p-dog.png',     monkey:() => 'art5/p-monkey.png',
+  giant:() => 'art5/p-giant.png',
   mum:() => 'art4/p-mum.png', duck:() => 'art4/p-duck.png', swan:() => 'art4/p-swan.png',
   rabbit:() => 'art3/p-rabbit.png', cat:() => 'art3/p-cat.png',
   queen:() => 'art3/p-queen.png',   hatter:() => 'art3/p-hatter.png'};
 const WHO = {narr:() => S.name, pal:() => S.name, slow:() => S.name,
-  dnarr:() => S.name, dpal:() => S.name,
+  dnarr:() => S.name, dpal:() => S.name, mnarr:() => S.name, mpal:() => S.name,
+  momo:() => 'Momotaro', gran:() => 'Grandmother', dog:() => 'The Dog',
+  monkey:() => 'The Monkey', giant:() => 'The Giant',
   mum:() => 'Mother Duck', duck:() => 'The Duckling', swan:() => 'The Swans',
   rabbit:() => 'White Rabbit', cat:() => 'Cheshire Cat',
   queen:() => 'The Queen',     hatter:() => 'Mad Hatter'};
@@ -1749,6 +1764,7 @@ async function runGB(){
    ========================================================= */
 function tagArt(w){
   if(w.art === 'up' || w.art === 'down') return arrowArt(w.art);
+  if(STORY === 'momo'   && PEACH[w.art]) return PEACH[w.art];
   if(STORY === 'duck'   && UGLY[w.art])  return UGLY[w.art];
   if(STORY === 'alice'  && WON[w.art])   return WON[w.art];
   if(STORY === 'gb'     && TOON[w.art])  return TOON[w.art];
@@ -1790,7 +1806,7 @@ function bankWord(key){
 /* say a story line with the word quietly labelled beside it.
    A few words are marked star — those get one short turn for the child to
    echo, without ever leaving the scene or dimming it. */
-const palVoice = () => STORY === 'duck' ? V.dpal : V.pal;
+const palVoice = () => STORY === 'duck' ? V.dpal : STORY === 'momo' ? V.mpal : V.pal;
 async function sayWord(key, text, voice, highlightId){
   if(stopFlag) return;
   const w = WORDS[key], t = $('wtag');
@@ -2292,12 +2308,159 @@ async function runDuck(){
   openBook();
 }
 
+/* =========================================================
+   STORY 6 — Momotaro, the Peach Boy (cartoon, live video scenes)
+   The cartoon look from The Gingerbread Man, run through the video pipeline
+   that made Alice and the Duckling move. Ogres played as daft comic giants.
+   ========================================================= */
+const MIMG = f => '<img src="art5/'+f+'" alt="" draggable="false" style="width:100%;height:auto;display:block">';
+const PEACH = {
+  peach:MIMG('w-peach.png'),   brave:MIMG('w-brave.png'),   journey:MIMG('w-journey.png'),
+  mountain:MIMG('w-mountain.png'), friend:MIMG('w-friend.png'), boat:MIMG('w-boat.png'),
+  island:MIMG('w-island.png'), treasure:MIMG('w-treasure.png')
+};
+const MOMO_CLIPS = ['village','river','peach','carry','crack','grow','brave','dumplings',
+  'farewell','mountain','dog','monkey','pheasant','four','shore','boat','island','giants',
+  'sorry','home'];
+
+const WORD_MOMO = {
+  peach:   {en:'peach',   es:'el melocotón', art:'peach',   reveal:"",reveal2:"", star:true},
+  brave:   {en:'brave',   es:'valiente',     art:'brave',   reveal:"",reveal2:""},
+  journey: {en:'journey', es:'el viaje',     art:'journey', reveal:"",reveal2:""},
+  mountain:{en:'mountain',es:'la montaña',   art:'mountain',reveal:"",reveal2:""},
+  friend:  {en:'friend',  es:'el amigo',     art:'friend',  reveal:"",reveal2:"", star:true},
+  boat:    {en:'boat',    es:'el barco',     art:'boat',    reveal:"",reveal2:"", star:true},
+  island:  {en:'island',  es:'la isla',      art:'island',  reveal:"",reveal2:""},
+  treasure:{en:'treasure',es:'el tesoro',    art:'treasure',reveal:"",reveal2:""}
+};
+
+const MOMO_LINES = {
+  mGreet:"[warmly] Ooh, this one is a big adventure. Come with me!",
+  mVillage:"[gently] Long ago, in a village between the green mountains, there lived a kind old woman and a kind old man.",
+  mRiver:"[warmly] Every morning, she went down to the sparkling river to wash the clothes.",
+  mPeach:"[amazed] When one day, bobbing along on the water, came the biggest peach she had ever seen!",
+  mCarry:"[cheerfully] So the two of them carried it home together, all the way up the hill.",
+  mCrack:"[excited] And when it opened — crack! — inside sat a laughing baby boy!",
+  mName:"[joyfully] Then we shall call you Momotaro. Our own little peach boy!",
+  mGrow:"[warmly] Momotaro grew up strong and kind, and helped them both every single day.",
+  mBraveN:"[gently] Until one morning, he stood up tall. He had made up his mind to be brave.",
+  mBrave:"[boldly] I am big and strong now. I will sail to the island, and ask the giants to give back everything they took.",
+  mDump:"[kindly] Then take these millet dumplings, the very best in all Japan. You will need them on your journey.",
+  mBye:"[warmly] And so, with a bundle tied to a stick, Momotaro set off.",
+  mMountain:"[gently] His path wound up and up, through the pine trees and the mountain mist.",
+  mDog:"[curiously] And there on the path sat a dog, sniffing the air and wagging his tail. Would he like to be a friend?",
+  mDogSay:"[eagerly] Ooh, that smells wonderful! Give me one dumpling and I will come with you!",
+  mMonkey:"[playfully] Next, a cheeky monkey came swinging down out of the branches.",
+  mMonkeySay:"[cheekily] Me too, me too! I am very good at climbing things!",
+  mPheasant:"[brightly] And last of all, a pheasant swooped down in a flash of red and green.",
+  mFour:"[warmly] Now there were four of them. And nobody felt frightened any more.",
+  mShore:"[gently] They walked until the path ran out, and there in front of them lay the wide blue sea.",
+  mBoat:"[excited] Into the little boat they climbed, and away they sailed across the waves!",
+  mIsland:"[wonder] Until at last, rising out of the blue, came the island with its great red gate.",
+  mGiants:"[playfully] The giants were enormous. But Momotaro put his hands on his hips, and asked them very firmly to give everything back.",
+  mGiantSay:"[sheepishly] Oh... oh dear. We are very sorry. We did not think anybody would mind.",
+  mSorry:"[warmly] And they handed back every last coin, and promised never to take anything again.",
+  mHome:"[joyfully] So home they sailed with the treasure, all the way back to the little village.",
+  mEnd:"[joyfully] And the old woman and the old man came running out with their arms wide open. The end!",
+  mThanks:"[warmly] He was brave, and he was kind. [brightly] That is the very best kind of hero. Look at all our new words!"
+};
+const MOMO_VOICE = {mGreet:'mpal', mThanks:'mpal', mName:'gran', mDump:'gran', mBrave:'momo',
+                    mDogSay:'dog', mMonkeySay:'monkey', mGiantSay:'giant'};
+
+async function runMomo(){
+  stopFlag = false;
+  WORDS = WORD_MOMO;
+  $('bookCount').textContent = learned().length;
+  Music.mood('calm');
+  Vid.dir = 'art5';
+  warmVideo(MOMO_CLIPS);
+  paint([]);
+  $('bgPlate').style.opacity = '0';
+  $('bgRoom').style.opacity  = '0';
+  $('bgArt').style.opacity   = '0';
+  setSpeaker('mnarr');
+  const M = MOMO_LINES;
+
+  await vshot('village');
+  await line(M.mGreet, V.mpal);     if(stopFlag) return;
+  await line(M.mVillage, V.mnarr);  if(stopFlag) return;
+
+  await vshot('river');
+  await line(M.mRiver, V.mnarr);   if(stopFlag) return;
+
+  await vshot('peach');
+  await sayWord('peach', M.mPeach, V.mnarr);   if(stopFlag) return;
+
+  await vshot('carry');
+  await line(M.mCarry, V.mnarr);   if(stopFlag) return;
+
+  Music.mood('happy');
+  await vshot('crack');
+  await line(M.mCrack, V.mnarr);   if(stopFlag) return;
+  await line(M.mName, V.gran);     if(stopFlag) return;
+
+  await vshot('grow');
+  await line(M.mGrow, V.mnarr);   if(stopFlag) return;
+
+  await vshot('brave');
+  await sayWord('brave', M.mBraveN, V.mnarr);   if(stopFlag) return;
+  await line(M.mBrave, V.momo);                  if(stopFlag) return;
+
+  await vshot('dumplings');
+  await sayWord('journey', M.mDump, V.gran);   if(stopFlag) return;
+
+  await vshot('farewell');
+  await line(M.mBye, V.mnarr);   if(stopFlag) return;
+
+  await vshot('mountain');
+  await sayWord('mountain', M.mMountain, V.mnarr);   if(stopFlag) return;
+
+  await vshot('dog');
+  await sayWord('friend', M.mDog, V.mnarr);   if(stopFlag) return;
+  await line(M.mDogSay, V.dog);                if(stopFlag) return;
+
+  await vshot('monkey');
+  await line(M.mMonkey, V.mnarr);      if(stopFlag) return;
+  await line(M.mMonkeySay, V.monkey);  if(stopFlag) return;
+
+  await vshot('pheasant');
+  await line(M.mPheasant, V.mnarr);   if(stopFlag) return;
+
+  await vshot('four');
+  await line(M.mFour, V.mnarr);   if(stopFlag) return;
+
+  await vshot('shore');
+  await line(M.mShore, V.mnarr);   if(stopFlag) return;
+
+  await vshot('boat');
+  await sayWord('boat', M.mBoat, V.mnarr);   if(stopFlag) return;
+
+  await vshot('island');
+  await sayWord('island', M.mIsland, V.mnarr);   if(stopFlag) return;
+
+  Music.mood('tense');
+  await vshot('giants');
+  await line(M.mGiants, V.mnarr);      if(stopFlag) return;
+  await line(M.mGiantSay, V.giant);    if(stopFlag) return;
+
+  Music.mood('happy');
+  await vshot('sorry');
+  await line(M.mSorry, V.mnarr);   if(stopFlag) return;
+
+  await vshot('home');
+  await sayWord('treasure', M.mHome, V.mnarr);   if(stopFlag) return;
+  await line(M.mEnd, V.mnarr);                    if(stopFlag) return;
+  await line(M.mThanks, V.mpal);                  if(stopFlag) return;
+  openBook();
+}
+
 const STORIES = {
   pigs:   {title:'The Three Little Pigs', sub:'7 words to teach',       thumb:'',                      words:WORD_PIGS,   run:runPigs,   lines:LINE},
   spider: {title:'Itsy Bitsy Spider',     sub:'9 words · claymation',   thumb:'art/bg/bg-rainbow.jpg', pos:'center top', words:WORD_SPIDER, run:runSpider, lines:SPIDER_LINES},
   gb:     {title:'The Gingerbread Man',   sub:'a big chase · cartoon',  thumb:'art2/bg/garden.jpg',    pos:'center 42%',  words:WORD_GB,     run:runGB,     lines:GB_LINES},
   alice:  {title:'Alice in Wonderland',   sub:'a dream · moving film',  thumb:'art3/poster.jpg',       pos:'center 30%',  words:WORD_ALICE,  run:runAlice,  lines:ALICE_LINES, portrait:true},
-  duck:   {title:'The Ugly Duckling',    sub:'four seasons · anime',   thumb:'art4/poster.jpg',       pos:'center 40%',  words:WORD_DUCK,   run:runDuck,   lines:DUCK_LINES,  portrait:true}
+  duck:   {title:'The Ugly Duckling',    sub:'four seasons · anime',   thumb:'art4/poster.jpg',       pos:'center 40%',  words:WORD_DUCK,   run:runDuck,   lines:DUCK_LINES,  portrait:true},
+  momo:   {title:'Momotaro, the Peach Boy', sub:'a sea voyage · cartoon', thumb:'art5/poster.jpg',    pos:'center 38%',  words:WORD_MOMO,   run:runMomo,   lines:MOMO_LINES,  portrait:true}
 };
 let STORY = 'pigs';
 function buildStoryPicker(){
@@ -2344,7 +2507,8 @@ function openBook(){
   try{ speechSynthesis.cancel(); }catch(e){}
   closeSay(); hideTag();
   stopVideo();
-  $('bookPal').innerHTML = STORY === 'duck'   ? DIMG('p-' + (S.pal==='cat'?'cat2':S.pal) + '.png')
+  $('bookPal').innerHTML = STORY === 'momo'   ? MIMG('p-' + S.pal + '.png')
+                         : STORY === 'duck'   ? DIMG('p-' + (S.pal==='cat'?'cat2':S.pal) + '.png')
                          : STORY === 'alice'  ? AIMG('p-' + (S.pal==='cat'?'cat2':S.pal) + '.png')
                          : STORY === 'gb'     ? TOON.pal[S.pal]
                          : STORY === 'spider' ? CLAY.pal[S.pal] : ART[S.pal];
