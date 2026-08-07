@@ -753,7 +753,8 @@ const LINE = {
   wAsk:"Ooh! What is that?",
   wYes:"You said it! Thank you for teaching me!"
 };
-const LINE_VOICE = {greet1:'pal',greet2:'pal',wAsk:'pal',wYes:'pal',thanks:'pal',notBy:'pig'};
+const LINE_VOICE = {greet1:'pal',greet2:'pal',wAsk:'pal',wYes:'pal',thanks:'pal',
+                    notBy:'vpig', knock:'vwolf', blow:'vwolf'};
 
 /* voice presets — TTS voice for the build, rate/pitch for the browser fallback */
 const V = {
@@ -781,6 +782,12 @@ const V = {
   trav :{rate:.88, pitch:.95,  k:'trav'},
   woman:{rate:.94, pitch:1.15, k:'woman'},
   child:{rate:1.0, pitch:1.5,  k:'child'},
+  /* every speaking part gets its own voice, in every story */
+  vpig  :{rate:.98, pitch:1.5,  k:'vpig'},
+  vwolf :{rate:.86, pitch:.8,   k:'vwolf'},
+  vcow  :{rate:.9,  pitch:.9,   k:'vcow'},
+  vhorse:{rate:.92, pitch:1.0,  k:'vhorse'},
+  vfox  :{rate:.98, pitch:1.2,  k:'vfox'},
   dpal :{rate:.94, pitch:1.5,  k:'dpal'},
   mum  :{rate:.88, pitch:1.05, k:'mum'},
   duck :{rate:.95, pitch:1.4,  k:'duck'},
@@ -933,7 +940,7 @@ const Music = {
 /* =========================================================
    AUDIO — pre-rendered narration, browser TTS as fallback
    ========================================================= */
-const AUD = {ok:false, map:{}, ready:null, src:null, el:null};
+const AUD = {ok:false, map:{}, ready:null, src:null, el:null, gen:0};
 function loadAudio(){
   AUD.ready = (async () => {
     try{
@@ -1056,7 +1063,15 @@ function webSpeak(text, opt){
 /* On a slow connection the first few lines used to fire before the clip
    manifest arrived and fell back to the robot voice, so wait for it briefly. */
 async function speak(text, opt){
+  /* A new line always replaces the one still playing. stopSpeech() alone was
+     not enough: a line still decoding would start playing after the cancel and
+     land on top of the next one, which is how the companion ended up talking
+     over the story's opening. The token makes a stale decode drop itself. */
+  stopSpeech();
+  const mine = ++AUD.gen;
+  const current = () => mine === AUD.gen && !stopFlag;
   if(!AUD.ok && AUD.ready) await Promise.race([AUD.ready, wait(2500)]);
+  if(!current()) return;
   const f = AUD.ok && AUD.map[text];
   if(f){
     /* if a clip is slow to arrive, show it rather than going quietly wrong */
@@ -1064,15 +1079,17 @@ async function speak(text, opt){
     let ok = false;
     if(Music.ctx){
       const buf = await clipBuffer(f);
-      if(buf && !stopFlag){ Music.duck(true); ok = await playBuffer(buf); Music.duck(false); }
+      if(buf && current()){ Music.duck(true); ok = await playBuffer(buf); Music.duck(false); }
+      else if(buf) ok = true;
     } else {
       Music.duck(true);
-      for(let t = 0; t < 3 && !ok && !stopFlag; t++){ if(t) await wait(400*t); ok = await playElement(f); }
+      for(let t = 0; t < 3 && !ok && current(); t++){ if(t) await wait(400*t); ok = await playElement(f); }
       Music.duck(false);
     }
     clearTimeout(slow); $('bar').classList.remove('waiting');
-    if(ok || stopFlag) return;
+    if(ok || !current()) return;
   }
+  if(!current()) return;
   return webSpeak(text, opt);
 }
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -1435,7 +1452,7 @@ async function blowMoment(targetId){
   if(stopFlag) return;
   narrate('Blow into the phone! 💨');
   if(el('pal')) el('pal').firstChild.classList.add('excited');
-  await speak(LINE.blow, V.narr);
+  await speak(LINE.blow, V.vwolf);
   if(stopFlag) return;
   const blew = await listenForVoice(6000, {needMs:200, gain:2.2, floor:.055});
   addItems([{a:ART.puff, r:'26%', b:'52%', w:110, anim:'slideR', z:6, id:'puff'}]);
@@ -1524,9 +1541,9 @@ async function runPigs(){
     {a:ART.wolf, r:'0%', b:'14%', w:150, anim:'slideR', cls:'brz', z:5},
     pal({l:'40%', b:'4%', w:96, z:6})
   ]});
-  await line(LINE.knock, V.narr);
+  await line(LINE.knock, V.vwolf);
   if(stopFlag) return;
-  await line(LINE.notBy, V.pig);
+  await line(LINE.notBy, V.vpig);
   if(stopFlag) return;
   await blowMoment('hStraw');
   if(stopFlag) return;
@@ -1644,14 +1661,14 @@ const SET = {};
 /* star = the child gets a turn to say this one. Three per story, spread out:
    early, middle and late, and all easy for a three-year-old to pronounce. */
 const WORD_GB = {
-  oven:  {en:'oven',  es:'el horno',   art:'oven',  reveal:"", reveal2:""},
-  run:   {en:'run',   es:'correr',     art:'run',   reveal:"", reveal2:"", star:true},
-  cow:   {en:'cow',   es:'la vaca',    art:'cow',   reveal:"", reveal2:"", star:true},
-  horse: {en:'horse', es:'el caballo', art:'horse', reveal:"", reveal2:""},
-  fast:  {en:'fast',  es:'rápido',     art:'fast',  reveal:"", reveal2:""},
-  river: {en:'river', es:'el río',     art:'river', reveal:"", reveal2:""},
-  fox:   {en:'fox',   es:'el zorro',   art:'fox',   reveal:"", reveal2:"", star:true},
-  home:  {en:'home',  es:'la casa',    art:'home',  reveal:"", reveal2:""}
+  oven:     {en:'oven',  es:'el horno',   art:'oven',  reveal:"", reveal2:""},
+  run:      {en:'run',   es:'correr',     art:'run',   reveal:"", reveal2:"", star:true},
+  cow:      {en:'cow',   es:'la vaca',    art:'cow',   reveal:"", reveal2:""},
+  horse:    {en:'horse', es:'el caballo', art:'horse', reveal:"", reveal2:"", star:true},
+  fast:     {en:'fast',  es:'rápido',     art:'fast',  reveal:"", reveal2:""},
+  river:    {en:'river', es:'el río',     art:'river', reveal:"", reveal2:"", star:true},
+  fox:      {en:'fox',   es:'el zorro',   art:'fox',   reveal:"", reveal2:""},
+  home:     {en:'home',  es:'la casa',    art:'home',  reveal:"", reveal2:"", star:true}
 };
 const GB_LINES = {
   gGreet:"Ooh, this one is a chase! Come on, let's watch.",
@@ -1682,7 +1699,8 @@ const GB_LINES = {
   gEnd:"She laughed and laughed, and gave him the biggest hug. The end!",
   gThanks:"That was the best one yet! And look how many words we found."
 };
-const GB_VOICE = {gGreet:'pal', gThanks:'pal', gChant:'pal', gCowSay:'pig', gHorseSay:'pig', gOffer:'pig'};
+const GB_VOICE = {gGreet:'pal', gThanks:'pal', gChant:'pal',
+                  gCowSay:'vcow', gHorseSay:'vhorse', gOffer:'vfox'};
 
 /* The gingerbread man's art runs to the LEFT, so he enters from the right
    (slideR) and everyone he races past stands on the left, facing him. */
@@ -1744,7 +1762,7 @@ async function runGB(){
     fit('gbRun', {ch:.21, cx:.78, b:.05, anim:'slideR', z:5})
   ]});
   await sayWord('cow', G.gCow, V.narr, 'theCow');   if(stopFlag) return;
-  await line(G.gCowSay, V.pig);                     if(stopFlag) return;
+  await line(G.gCowSay, V.vcow);                    if(stopFlag) return;
 
   /* 8 — the horse  [word: horse] */
   await shot({plate:SET.field, sky:false, items:[
@@ -1752,7 +1770,7 @@ async function runGB(){
     fit('gbRun', {ch:.21, cx:.78, b:.05, anim:'slideR', z:5})
   ]});
   await sayWord('horse', G.gHorse, V.narr, 'theHorse');   if(stopFlag) return;
-  await line(G.gHorseSay, V.pig);                          if(stopFlag) return;
+  await line(G.gHorseSay, V.vhorse);                       if(stopFlag) return;
 
   /* 9 — the farmyard  [word: fast] */
   await shot({plate:SET.farmyard, sky:false, items:[
@@ -1783,7 +1801,7 @@ async function runGB(){
     fit('gbWorried', {ch:.28, cx:.26, b:.08, z:5})
   ]});
   await sayWord('fox', G.gFox, V.narr, 'theFox');   if(stopFlag) return;
-  await line(G.gOffer, V.pig);                       if(stopFlag) return;
+  await line(G.gOffer, V.vfox);                      if(stopFlag) return;
 
   /* 13 — crossing the water: he rides on the fox's back (overlap on purpose) */
   await shot({plate:SET.water, sky:false, items:[
@@ -2095,14 +2113,14 @@ const ALICE_CLIPS = ['riverbank','rabbit','chase','hole','falling','fallthings',
   'door','small','shrunk','big','garden','cat','fade','tea','party','queen','cards','wake'];
 
 const WORD_ALICE = {
-  rabbit:{en:'rabbit',es:'el conejo', art:'rabbit',reveal:"",reveal2:"", star:true},
-  hole:  {en:'hole',  es:'el agujero',art:'hole',  reveal:"",reveal2:""},
-  key:   {en:'key',   es:'la llave',  art:'key',   reveal:"",reveal2:""},
-  small: {en:'small', es:'pequeño',   art:'small', reveal:"",reveal2:""},
-  big:   {en:'big',   es:'grande',    art:'big',   reveal:"",reveal2:""},
-  cat:   {en:'cat',   es:'el gato',   art:'cat',   reveal:"",reveal2:"", star:true},
-  tea:   {en:'tea',   es:'el té',     art:'tea',   reveal:"",reveal2:""},
-  queen: {en:'queen', es:'la reina',  art:'queen', reveal:"",reveal2:"", star:true}
+  rabbit:   {en:'rabbit',es:'el conejo', art:'rabbit',reveal:"",reveal2:"", star:true},
+  hole:     {en:'hole',  es:'el agujero',art:'hole',  reveal:"",reveal2:""},
+  key:      {en:'key',   es:'la llave',  art:'key',   reveal:"",reveal2:"", star:true},
+  small:    {en:'small', es:'pequeño',   art:'small', reveal:"",reveal2:""},
+  big:      {en:'big',   es:'grande',    art:'big',   reveal:"",reveal2:""},
+  cat:      {en:'cat',   es:'el gato',   art:'cat',   reveal:"",reveal2:"", star:true},
+  tea:      {en:'tea',   es:'el té',     art:'tea',   reveal:"",reveal2:""},
+  queen:    {en:'queen', es:'la reina',  art:'queen', reveal:"",reveal2:"", star:true}
 };
 const ALICE_LINES = {
   aGreet:"Ooh, this one is a dream! Come and watch it with me.",
@@ -2239,9 +2257,9 @@ const DUCK_CLIPS = ['nest','hatch','grey','pond','laughed','lonely','leaves','ge
 const WORD_DUCK = {
   feather:  {en:'feather',  es:'la pluma',     art:'feather',  reveal:"",reveal2:"", star:true},
   pond:     {en:'pond',     es:'el estanque',  art:'pond',     reveal:"",reveal2:""},
-  lonely:   {en:'lonely',   es:'solo',         art:'lonely',   reveal:"",reveal2:""},
-  winter:   {en:'winter',   es:'el invierno',  art:'winter',   reveal:"",reveal2:"", star:true},
-  ice:      {en:'ice',      es:'el hielo',     art:'ice',      reveal:"",reveal2:""},
+  lonely:   {en:'lonely',   es:'solo',         art:'lonely',   reveal:"",reveal2:"", star:true},
+  winter:   {en:'winter',   es:'el invierno',  art:'winter',   reveal:"",reveal2:""},
+  ice:      {en:'ice',      es:'el hielo',     art:'ice',      reveal:"",reveal2:"", star:true},
   spring:   {en:'spring',   es:'la primavera', art:'spring',   reveal:"",reveal2:""},
   swan:     {en:'swan',     es:'el cisne',     art:'swan',     reveal:"",reveal2:"", star:true},
   beautiful:{en:'beautiful',es:'hermoso',      art:'beautiful',reveal:"",reveal2:""}
@@ -2382,14 +2400,14 @@ const MOMO_CLIPS = ['village','river','peach','carry','crack','grow','brave','du
   'sorry','home'];
 
 const WORD_MOMO = {
-  peach:   {en:'peach',   es:'el melocotón', art:'peach',   reveal:"",reveal2:"", star:true},
-  brave:   {en:'brave',   es:'valiente',     art:'brave',   reveal:"",reveal2:""},
-  journey: {en:'journey', es:'el viaje',     art:'journey', reveal:"",reveal2:""},
-  mountain:{en:'mountain',es:'la montaña',   art:'mountain',reveal:"",reveal2:""},
-  friend:  {en:'friend',  es:'el amigo',     art:'friend',  reveal:"",reveal2:"", star:true},
-  boat:    {en:'boat',    es:'el barco',     art:'boat',    reveal:"",reveal2:"", star:true},
-  island:  {en:'island',  es:'la isla',      art:'island',  reveal:"",reveal2:""},
-  treasure:{en:'treasure',es:'el tesoro',    art:'treasure',reveal:"",reveal2:""}
+  peach:    {en:'peach',   es:'el melocotón', art:'peach',   reveal:"",reveal2:"", star:true},
+  brave:    {en:'brave',   es:'valiente',     art:'brave',   reveal:"",reveal2:""},
+  journey:  {en:'journey', es:'el viaje',     art:'journey', reveal:"",reveal2:""},
+  mountain: {en:'mountain',es:'la montaña',   art:'mountain',reveal:"",reveal2:"", star:true},
+  friend:   {en:'friend',  es:'el amigo',     art:'friend',  reveal:"",reveal2:""},
+  boat:     {en:'boat',    es:'el barco',     art:'boat',    reveal:"",reveal2:"", star:true},
+  island:   {en:'island',  es:'la isla',      art:'island',  reveal:"",reveal2:""},
+  treasure: {en:'treasure',es:'el tesoro',    art:'treasure',reveal:"",reveal2:"", star:true}
 };
 
 const MOMO_LINES = {
@@ -2530,7 +2548,7 @@ const WORD_SOUP = {
   hungry:   {en:'hungry',   es:'hambriento',    art:'hungry',   reveal:"",reveal2:""},
   stone:    {en:'stone',    es:'la piedra',     art:'stone',    reveal:"",reveal2:"", star:true},
   stir:     {en:'stir',     es:'remover',       art:'stir',     reveal:"",reveal2:""},
-  carrot:   {en:'carrot',   es:'la zanahoria',  art:'carrot',   reveal:"",reveal2:""},
+  carrot:   {en:'carrot',   es:'la zanahoria',  art:'carrot',   reveal:"",reveal2:"", star:true},
   delicious:{en:'delicious',es:'delicioso',     art:'delicious',reveal:"",reveal2:""},
   feast:    {en:'feast',    es:'el banquete',   art:'feast',    reveal:"",reveal2:""},
   share:    {en:'share',    es:'compartir',     art:'share',    reveal:"",reveal2:"", star:true}
@@ -2749,8 +2767,9 @@ function buildNameScreen(){
     b.onclick = async () => {
       S.name = n; save();
       narrate('…');
-      runActive();
+      /* let the name land before the story starts talking over it */
       await speak('Hooray! My name is ' + n + '!', V.pal);
+      runActive();
     };
     c.appendChild(b);
   });
