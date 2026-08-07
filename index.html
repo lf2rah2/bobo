@@ -776,6 +776,11 @@ const V = {
   dog  :{rate:.98, pitch:1.1,  k:'dog'},
   monkey:{rate:1.04,pitch:1.45,k:'monkey'},
   giant:{rate:.82, pitch:.8,   k:'giant'},
+  unarr:{rate:.86, pitch:1.0,  k:'unarr'},
+  upal :{rate:.94, pitch:1.5,  k:'upal'},
+  trav :{rate:.88, pitch:.95,  k:'trav'},
+  woman:{rate:.94, pitch:1.15, k:'woman'},
+  child:{rate:1.0, pitch:1.5,  k:'child'},
   dpal :{rate:.94, pitch:1.5,  k:'dpal'},
   mum  :{rate:.88, pitch:1.05, k:'mum'},
   duck :{rate:.95, pitch:1.4,  k:'duck'},
@@ -798,6 +803,7 @@ function allSpeech(){
   Object.keys(ALICE_LINES).forEach(k => add(ALICE_LINES[k], ALICE_VOICE[k] || 'narr'));
   Object.keys(DUCK_LINES).forEach(k => add(DUCK_LINES[k], DUCK_VOICE[k] || 'dnarr'));
   Object.keys(MOMO_LINES).forEach(k => add(MOMO_LINES[k], MOMO_VOICE[k] || 'mnarr'));
+  Object.keys(SOUP_LINES).forEach(k => add(SOUP_LINES[k], SOUP_VOICE[k] || 'unarr'));
   const ALLW = {};
   Object.keys(WORD_PIGS).forEach(k => ALLW[k] = WORD_PIGS[k]);
   Object.keys(WORD_SPIDER).forEach(k => ALLW[k] = WORD_SPIDER[k]);
@@ -805,10 +811,11 @@ function allSpeech(){
   Object.keys(WORD_ALICE).forEach(k => { if(!ALLW[k]) ALLW[k] = WORD_ALICE[k]; });
   Object.keys(WORD_DUCK).forEach(k => { if(!ALLW[k]) ALLW[k] = WORD_DUCK[k]; });
   Object.keys(WORD_MOMO).forEach(k => { if(!ALLW[k]) ALLW[k] = WORD_MOMO[k]; });
+  Object.keys(WORD_SOUP).forEach(k => { if(!ALLW[k]) ALLW[k] = WORD_SOUP[k]; });
   Object.keys(ALLW).forEach(k => {
     const w = ALLW[k];
     if(w.star){
-      const pv = WORD_DUCK[k] ? 'dpal' : WORD_MOMO[k] ? 'mpal' : 'pal';
+      const pv = WORD_DUCK[k] ? 'dpal' : WORD_MOMO[k] ? 'mpal' : WORD_SOUP[k] ? 'upal' : 'pal';
       add('Say it with me. ' + w.en + '!', pv);
       add('Yes! ' + w.en + '!', pv);
       add(w.en + '!', pv);
@@ -1300,7 +1307,8 @@ function stopVideo(){
    ========================================================= */
 const palFace = () => 'art3/p-' + (S.pal === 'cat' ? 'cat2' : S.pal) + '.png';
 const FACE = {narr:palFace, pal:palFace, slow:palFace, dnarr:palFace, dpal:palFace,
-  mnarr:palFace, mpal:palFace,
+  mnarr:palFace, mpal:palFace, unarr:palFace, upal:palFace,
+  trav:() => 'art6/p-trav.png', woman:() => 'art6/p-woman.png', child:() => 'art6/p-child.png',
   momo:() => 'art5/p-momo.png',   gran:() => 'art5/p-gran.png',
   dog:() => 'art5/p-dog.png',     monkey:() => 'art5/p-monkey.png',
   giant:() => 'art5/p-giant.png',
@@ -1309,6 +1317,8 @@ const FACE = {narr:palFace, pal:palFace, slow:palFace, dnarr:palFace, dpal:palFa
   queen:() => 'art3/p-queen.png',   hatter:() => 'art3/p-hatter.png'};
 const WHO = {narr:() => S.name, pal:() => S.name, slow:() => S.name,
   dnarr:() => S.name, dpal:() => S.name, mnarr:() => S.name, mpal:() => S.name,
+  unarr:() => S.name, upal:() => S.name,
+  trav:() => 'The Traveller', woman:() => 'A Villager', child:() => 'The Little Girl',
   momo:() => 'Momotaro', gran:() => 'Grandmother', dog:() => 'The Dog',
   monkey:() => 'The Monkey', giant:() => 'The Giant',
   mum:() => 'Mother Duck', duck:() => 'The Duckling', swan:() => 'The Swans',
@@ -1810,6 +1820,7 @@ async function runGB(){
    ========================================================= */
 function tagArt(w){
   if(w.art === 'up' || w.art === 'down') return arrowArt(w.art);
+  if(STORY === 'soup'   && SOUP[w.art])  return SOUP[w.art];
   if(STORY === 'momo'   && PEACH[w.art]) return PEACH[w.art];
   if(STORY === 'duck'   && UGLY[w.art])  return UGLY[w.art];
   if(STORY === 'alice'  && WON[w.art])   return WON[w.art];
@@ -1852,7 +1863,8 @@ function bankWord(key){
 /* say a story line with the word quietly labelled beside it.
    A few words are marked star — those get one short turn for the child to
    echo, without ever leaving the scene or dimming it. */
-const palVoice = () => STORY === 'duck' ? V.dpal : STORY === 'momo' ? V.mpal : V.pal;
+const palVoice = () => STORY === 'duck' ? V.dpal : STORY === 'momo' ? V.mpal :
+                       STORY === 'soup' ? V.upal : V.pal;
 async function sayWord(key, text, voice, highlightId){
   if(stopFlag) return;
   const w = WORDS[key], t = $('wtag');
@@ -2500,13 +2512,150 @@ async function runMomo(){
   openBook();
 }
 
+/* =========================================================
+   STORY 7 — Stone Soup (1950s gouache, live video scenes)
+   No villain anywhere in it, which is a first for this shelf.
+   ========================================================= */
+const SIMG = f => '<img src="art6/'+f+'" alt="" draggable="false" style="width:100%;height:auto;display:block">';
+const SOUP = {
+  village:SIMG('w-village.png'),   hungry:SIMG('w-hungry.png'), stone:SIMG('w-stone.png'),
+  stir:   SIMG('w-stir.png'),      carrot:SIMG('w-carrot.png'),
+  delicious:SIMG('w-delicious.png'), feast:SIMG('w-feast.png'), share:SIMG('w-share.png')
+};
+const SOUP_CLIPS = ['road','traveller','village','shutters','hide','knock','hungry','idea','fire',
+  'stone','drop','stir','curious','taste','carrot','more','bubbling','delicious','feast','share'];
+
+const WORD_SOUP = {
+  village:  {en:'village',  es:'el pueblo',     art:'village',  reveal:"",reveal2:"", star:true},
+  hungry:   {en:'hungry',   es:'hambriento',    art:'hungry',   reveal:"",reveal2:""},
+  stone:    {en:'stone',    es:'la piedra',     art:'stone',    reveal:"",reveal2:"", star:true},
+  stir:     {en:'stir',     es:'remover',       art:'stir',     reveal:"",reveal2:""},
+  carrot:   {en:'carrot',   es:'la zanahoria',  art:'carrot',   reveal:"",reveal2:""},
+  delicious:{en:'delicious',es:'delicioso',     art:'delicious',reveal:"",reveal2:""},
+  feast:    {en:'feast',    es:'el banquete',   art:'feast',    reveal:"",reveal2:""},
+  share:    {en:'share',    es:'compartir',     art:'share',    reveal:"",reveal2:"", star:true}
+};
+
+const SOUP_LINES = {
+  sGreet:"[warmly] Ooh, I love this one. It is all about sharing.",
+  sRoad:"[gently] One evening, a traveller came walking along the road, looking for somewhere to rest.",
+  sVillage:"[gently] At the top of the hill he found a little village, with a stone well in the middle of the square.",
+  sShutters:"[quietly] But as he arrived, every shutter clicked shut, and every door closed tight.",
+  sHide:"[quietly] For the villagers had had a hard year, and each one hid away what little food they had.",
+  sKnock:"[gently] He knocked at one door. And then another. But nobody came out.",
+  sHungry:"[softly] So the traveller sat down on the edge of the well. He was very tired, and very hungry.",
+  sIdea:"[brightly] And then... he had an idea. A really rather good idea!",
+  sFire:"[cheerfully] He built a little fire in the square, and hung a great big pot of water over it.",
+  sStone:"[wonder] Then he bent down, and picked up one smooth grey stone.",
+  sStoneSay:"[grandly] Stone soup! Ahh. There is nothing in all the world quite like a good stone soup.",
+  sDrop:"[playfully] And plop! In went the stone. Behind every window, somebody was watching.",
+  sStir:"[happily] He stirred, and he hummed, and he smiled a very big smile indeed.",
+  sCurious:"[curiously] And slowly, one by one, the doors began to creak open.",
+  sChild:"[curiously] What are you making? Can I see? Can I?",
+  sTaste:"[thoughtfully] Mmm. Wonderful. Although... I do think it would be even better with one carrot.",
+  sCarrot:"[brightly] Carrots! Oh, I have carrots. Wait right there!",
+  sMore:"[cheerfully] And then came potatoes. And onions. And cabbages, and beans, and barley.",
+  sBubbling:"[warmly] The big pot bubbled and steamed until it was full right up to the brim.",
+  sDelicious:"[delighted] And when at last they tasted it — oh! It was absolutely delicious.",
+  sFeast:"[joyfully] So out came the tables, up went the lanterns, and the whole village ate together.",
+  sNight:"[warmly] Not one of them had had enough on their own. But together, there was plenty for everybody.",
+  sShare:"[gently] In the morning, the traveller waved goodbye. He had brought no food with him at all. He had brought something better. He had taught them how to share.",
+  sEnd:"[joyfully] And the little girl in the red coat kept that stone forever. The end!",
+  sThanks:"[warmly] A stone cannot really make soup. But it can make friends. [brightly] Look at all our new words!"
+};
+const SOUP_VOICE = {sGreet:'upal', sThanks:'upal', sStoneSay:'trav', sTaste:'trav',
+                    sCarrot:'woman', sChild:'child'};
+
+async function runSoup(){
+  stopFlag = false;
+  WORDS = WORD_SOUP;
+  $('bookCount').textContent = learned().length;
+  Music.mood('calm');
+  Vid.dir = 'art6';
+  warmVideo(SOUP_CLIPS);
+  paint([]);
+  $('bgPlate').style.opacity = '0';
+  $('bgRoom').style.opacity  = '0';
+  $('bgArt').style.opacity   = '0';
+  setSpeaker('unarr');
+  const U = SOUP_LINES;
+
+  await vshot('road');
+  await line(U.sGreet, V.upal);   if(stopFlag) return;
+
+  await vshot('traveller');
+  await line(U.sRoad, V.unarr);   if(stopFlag) return;
+
+  await vshot('village');
+  await sayWord('village', U.sVillage, V.unarr);   if(stopFlag) return;
+
+  await vshot('shutters');
+  await line(U.sShutters, V.unarr);   if(stopFlag) return;
+
+  await vshot('hide');
+  await line(U.sHide, V.unarr);   if(stopFlag) return;
+
+  await vshot('knock');
+  await line(U.sKnock, V.unarr);   if(stopFlag) return;
+
+  await vshot('hungry');
+  await sayWord('hungry', U.sHungry, V.unarr);   if(stopFlag) return;
+
+  Music.mood('happy');
+  await vshot('idea');
+  await line(U.sIdea, V.unarr);   if(stopFlag) return;
+
+  await vshot('fire');
+  await line(U.sFire, V.unarr);   if(stopFlag) return;
+
+  await vshot('stone');
+  await sayWord('stone', U.sStone, V.unarr);   if(stopFlag) return;
+  await line(U.sStoneSay, V.trav);              if(stopFlag) return;
+
+  await vshot('drop');
+  await line(U.sDrop, V.unarr);   if(stopFlag) return;
+
+  await vshot('stir');
+  await sayWord('stir', U.sStir, V.unarr);   if(stopFlag) return;
+
+  await vshot('curious');
+  await line(U.sCurious, V.unarr);   if(stopFlag) return;
+  await line(U.sChild, V.child);     if(stopFlag) return;
+
+  await vshot('taste');
+  await line(U.sTaste, V.trav);   if(stopFlag) return;
+
+  await vshot('carrot');
+  await sayWord('carrot', U.sCarrot, V.woman);   if(stopFlag) return;
+
+  await vshot('more');
+  await line(U.sMore, V.unarr);   if(stopFlag) return;
+
+  await vshot('bubbling');
+  await line(U.sBubbling, V.unarr);   if(stopFlag) return;
+
+  await vshot('delicious');
+  await sayWord('delicious', U.sDelicious, V.unarr);   if(stopFlag) return;
+
+  await vshot('feast');
+  await sayWord('feast', U.sFeast, V.unarr);   if(stopFlag) return;
+  await line(U.sNight, V.unarr);                 if(stopFlag) return;
+
+  await vshot('share');
+  await sayWord('share', U.sShare, V.unarr);   if(stopFlag) return;
+  await line(U.sEnd, V.unarr);                  if(stopFlag) return;
+  await line(U.sThanks, V.upal);                if(stopFlag) return;
+  openBook();
+}
+
 const STORIES = {
   pigs:   {title:'The Three Little Pigs', sub:'7 words to teach',       thumb:'',                      words:WORD_PIGS,   run:runPigs,   lines:LINE},
   spider: {title:'Itsy Bitsy Spider',     sub:'9 words · claymation',   thumb:'art/bg/bg-rainbow.jpg', pos:'center top', words:WORD_SPIDER, run:runSpider, lines:SPIDER_LINES},
   gb:     {title:'The Gingerbread Man',   sub:'a big chase · cartoon',  thumb:'art2/bg/garden.jpg',    pos:'center 42%',  words:WORD_GB,     run:runGB,     lines:GB_LINES},
   alice:  {title:'Alice in Wonderland',   sub:'a dream · moving film',  thumb:'art3/poster.jpg',       pos:'center 30%',  words:WORD_ALICE,  run:runAlice,  lines:ALICE_LINES, portrait:true},
   duck:   {title:'The Ugly Duckling',    sub:'four seasons · anime',   thumb:'art4/poster.jpg',       pos:'center 40%',  words:WORD_DUCK,   run:runDuck,   lines:DUCK_LINES,  portrait:true},
-  momo:   {title:'Momotaro, the Peach Boy', sub:'a sea voyage · cartoon', thumb:'art5/poster.jpg',    pos:'center 38%',  words:WORD_MOMO,   run:runMomo,   lines:MOMO_LINES,  portrait:true}
+  momo:   {title:'Momotaro, the Peach Boy', sub:'a sea voyage · cartoon', thumb:'art5/poster.jpg',    pos:'center 38%',  words:WORD_MOMO,   run:runMomo,   lines:MOMO_LINES,  portrait:true},
+  soup:   {title:'Stone Soup',            sub:'sharing · 1950s paint',  thumb:'art6/poster.jpg',       pos:'center 40%',  words:WORD_SOUP,   run:runSoup,   lines:SOUP_LINES,  portrait:true}
 };
 let STORY = 'pigs';
 function buildStoryPicker(){
@@ -2547,7 +2696,8 @@ function openBook(){
   stopSpeech();
   closeSay(); hideTag();
   stopVideo();
-  $('bookPal').innerHTML = STORY === 'momo'   ? MIMG('p-' + S.pal + '.png')
+  $('bookPal').innerHTML = STORY === 'soup'   ? SIMG('p-' + S.pal + '.png')
+                         : STORY === 'momo'   ? MIMG('p-' + S.pal + '.png')
                          : STORY === 'duck'   ? DIMG('p-' + (S.pal==='cat'?'cat2':S.pal) + '.png')
                          : STORY === 'alice'  ? AIMG('p-' + (S.pal==='cat'?'cat2':S.pal) + '.png')
                          : STORY === 'gb'     ? TOON.pal[S.pal]
