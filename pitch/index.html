@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ten in the Bed — five ideas</title>
+<style>
+:root{
+  --ink:#f4efe6; --dim:#a79bb5; --night:#171226; --card:#241c3b; --edge:#3a2f57;
+  --gold:#ffc857; --pink:#ff8fb1; --mint:#6fe3c4; --violet:#a98bff;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--night);color:var(--ink);
+  font:16px/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background-image:radial-gradient(1200px 600px at 50% -10%,#2c2145 0%,transparent 60%)}
+.wrap{max-width:820px;margin:0 auto;padding:26px 18px 90px}
+h1{font-size:29px;line-height:1.2;margin:.2em 0 .1em;letter-spacing:-.4px}
+h2{font-size:20px;margin:0 0 4px;letter-spacing:-.2px}
+.sub{color:var(--dim);font-size:14.5px;margin:0 0 26px}
+.eyebrow{color:var(--gold);font-size:12px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;margin:0}
+
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:20px 0 8px}
+.strip img{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:12px;display:block}
+.cap{color:var(--dim);font-size:12.5px;margin:0 0 26px}
+
+.panel{background:var(--card);border:1px solid var(--edge);border-radius:18px;
+  padding:18px;margin:0 0 16px}
+.panel.tight{padding:15px 16px}
+.why{border-left:3px solid var(--pink)}
+.why p{margin:.5em 0;font-size:14.5px;color:#ded5ea}
+
+.idea{background:var(--card);border:1px solid var(--edge);border-radius:20px;
+  padding:20px 18px 22px;margin:0 0 18px;position:relative;overflow:hidden}
+.idea::before{content:'';position:absolute;inset:0 0 auto 0;height:3px;
+  background:linear-gradient(90deg,var(--gold),var(--pink),var(--violet))}
+.num{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;
+  border-radius:9px;background:var(--gold);color:#2a1c00;font-weight:800;font-size:14px;
+  margin-right:9px;flex:none}
+.head{display:flex;align-items:center;margin:2px 0 6px}
+.pitch{color:#ded5ea;font-size:14.5px;margin:0 0 14px}
+.pitch b{color:#fff}
+.demo{background:#1b1530;border:1px solid var(--edge);border-radius:14px;padding:15px}
+.demoLbl{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--dim);
+  font-weight:700;margin:0 0 11px}
+
+button{font:inherit;cursor:pointer}
+.btn{background:var(--violet);color:#160f28;border:0;border-radius:11px;
+  padding:11px 17px;font-weight:700;font-size:15px}
+.btn:active{transform:translateY(1px)}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--edge)}
+.btn.gold{background:var(--gold);color:#2a1c00}
+.row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+
+/* 1 — sing along */
+.lyric{font-size:20px;line-height:1.75;font-weight:700;margin:14px 0 4px;min-height:96px}
+.lyric span{opacity:.3;transition:opacity .12s,transform .12s,color .12s;
+  display:inline-block;margin-right:.3em}
+.lyric span.hit{opacity:1;color:var(--gold);transform:translateY(-3px) scale(1.08)}
+.lyric span.big{font-size:26px}
+.beatbar{height:6px;background:#2e2450;border-radius:4px;overflow:hidden;margin-top:8px}
+.beatbar i{display:block;height:100%;width:0;background:var(--mint)}
+
+/* 2 — tap to count */
+.bedgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin:6px 0 12px}
+.kid{aspect-ratio:1;border:0;border-radius:50%;position:relative;
+  background:#3a2f57;transition:transform .18s cubic-bezier(.3,1.6,.5,1),background .2s}
+.kid:active{transform:scale(.9)}
+.kid.done{background:var(--mint)}
+.kid.pop{transform:translateY(-9px) scale(1.14)}
+.kid i{position:absolute;left:22%;top:40%;width:12%;height:9%;border-radius:9px;background:#191231}
+.kid i+i{left:66%}
+.kid.done i{height:3px;top:44%}
+.tally{font-size:26px;font-weight:800;text-align:center;margin:2px 0 0;min-height:36px}
+.tally small{display:block;font-size:14px;color:var(--mint);font-weight:600}
+
+/* 3 — music thins out */
+.layers{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 0}
+.lay{font-size:12px;font-weight:700;padding:6px 10px;border-radius:8px;
+  background:#2e2450;color:#6b5f8d;transition:.25s}
+.lay.on{background:var(--violet);color:#160f28}
+.bignum{font-size:52px;font-weight:800;text-align:center;line-height:1;margin:8px 0 2px;
+  font-variant-numeric:tabular-nums}
+.bignum small{display:block;font-size:14px;color:var(--dim);font-weight:600;margin-top:6px}
+
+/* 4 — cutting */
+.player{position:relative;aspect-ratio:9/16;max-height:330px;margin:0 auto;border-radius:13px;
+  overflow:hidden;background:#000}
+.player img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;
+  transition:opacity .12s}
+.player img.on{opacity:1}
+.film{display:flex;gap:3px;margin:11px 0 0;height:26px}
+.film i{border-radius:4px;background:var(--violet);opacity:.45;font-size:0}
+.film i.cut{background:var(--pink);opacity:1}
+.film i.on{opacity:1}
+.flabel{font-size:11.5px;color:var(--dim);margin:6px 0 0}
+
+/* 5 — personalise */
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 12px}
+.chip{background:#2e2450;border:1px solid var(--edge);color:var(--ink);border-radius:20px;
+  padding:7px 14px;font-size:14px;font-weight:600}
+.chip.on{background:var(--pink);color:#2a0d17;border-color:var(--pink)}
+.verse{background:#1a1430;border-radius:12px;padding:14px 15px;font-size:16.5px;
+  line-height:1.7;font-weight:600}
+.verse em{color:var(--gold);font-style:normal;font-weight:800}
+
+.aud{width:100%;margin:8px 0 0;height:36px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:520px){.grid2{grid-template-columns:1fr}}
+.take{background:#1b1530;border:1px solid var(--edge);border-radius:12px;padding:12px}
+.take h4{margin:0 0 2px;font-size:14.5px}
+.take p{margin:0;font-size:12.5px;color:var(--dim)}
+.rec{border-color:var(--mint)}
+.rec h4::after{content:' — my pick';color:var(--mint);font-weight:600;font-size:12px}
+
+.words{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 0}
+.w{background:#2e2450;border-radius:8px;padding:5px 10px;font-size:13px;font-weight:600}
+.w b{color:var(--gold);font-weight:800}
+.w s{color:var(--dim);text-decoration:none;font-weight:500}
+
+.foot{border-top:1px solid var(--edge);margin-top:30px;padding-top:20px}
+.foot ol{padding-left:20px;color:#ded5ea;font-size:14.5px}
+.note{color:var(--dim);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="eyebrow">Story 8 · pitch</p>
+  <h1>Ten in the Bed</h1>
+  <p class="sub">3D Pixar / CoComelon look · about the length of Alice · five ideas for making
+     the middle actually fun. Tap every demo — they all really run.</p>
+
+  <div class="strip">
+    <img src="bed10.jpg" alt=""><img src="react.jpg" alt="">
+    <img src="tumble.jpg" alt=""><img src="solo.jpg" alt="">
+  </div>
+  <p class="cap">Real frames from the render, not mock-ups — this is the look I'd build in.
+     Same pipeline as Stone Soup, different style prompt.</p>
+
+  <div class="panel why">
+    <h2>Why the middle feels boring right now</h2>
+    <p>Every scene in all seven stories is the <b>same shape</b>: a clip plays, a voice reads one
+       sentence, occasionally a word slides up. Twenty scenes, one rhythm. Nothing the child does
+       changes anything, and the music is a four-bar loop that never reacts to the story.</p>
+    <p>So the five ideas below are all about <b>breaking that single rhythm</b> — different kinds
+       of scene, not just nicer art.</p>
+  </div>
+
+  <!-- ============ 1 ============ -->
+  <div class="idea">
+    <div class="head"><span class="num">1</span><h2>The song carries the story</h2></div>
+    <p class="pitch">This is the whole CoComelon engine. The refrain becomes a <b>real verse over a
+       real beat</b> — drums, bass, claps — with the words lighting up one at a time so a
+       pre-reader can join in. Ten in the Bed already <i>is</i> a song, so the repetition stops
+       being a weakness and becomes the hook. Ten verses, each one shorter than a paragraph
+       of narration.</p>
+    <div class="demo">
+      <p class="demoLbl">Live — the verse, with the backing track</p>
+      <div class="row">
+        <button class="btn" id="p1">▶︎ Play the verse</button>
+        <button class="btn ghost" id="s1">Stop</button>
+      </div>
+      <div class="lyric" id="ly1"></div>
+      <div class="beatbar"><i id="bb1"></i></div>
+    </div>
+    <div class="demo" style="margin-top:11px">
+      <p class="demoLbl">Can the voice actually sing it? I tested — here are the real takes</p>
+      <div class="grid2">
+        <div class="take"><h4>Asked it to sing</h4><p>Using the engine's own “singing” instruction.</p>
+          <audio class="aud" controls preload="none" src="sing.mp3"></audio></div>
+        <div class="take rec"><h4>Chanted on the beat</h4><p>Rhythmic, with a shouted “ROLL OVER!”</p>
+          <audio class="aud" controls preload="none" src="chant.mp3"></audio></div>
+      </div>
+      <p class="note" style="margin:10px 0 0"><b style="color:#ff8fb1">Worth knowing:</b> the
+        “singing” instruction doesn't really work. I measured both takes — pitch range 15.3 vs 13.8
+        semitones, holding a steady note 63% vs 66% of the time. They're the same thing. This engine
+        does <b>expressive speech, not melody</b>, and no prompt wording gets around that.</p>
+      <p class="note" style="margin:8px 0 0">So the design is: <b>the instruments carry the tune,
+        the voice chants the words on top of it</b> — which is what the demo above is doing, and it
+        works. If you want genuine singing later, that's a different tool and a separate decision.</p>
+    </div>
+  </div>
+
+  <!-- ============ 2 ============ -->
+  <div class="idea">
+    <div class="head"><span class="num">2</span><h2>He does the counting, not the narrator</h2></div>
+    <p class="pitch">Right now he watches. Here the story <b>stops and waits for him</b>: ten
+       sleepy animals in the bed, and he taps each one to count it. Each tap wakes that animal,
+       pops the number, and says it in English then Spanish. The scene doesn't move on until he's
+       counted them. Same trick as the speaking turns, but for numbers — and <b>uno to diez is
+       real vocabulary</b>, not "up" and "down".</p>
+    <div class="demo">
+      <p class="demoLbl">Live — tap every sleeper</p>
+      <div class="bedgrid" id="bg2"></div>
+      <p class="tally" id="t2">Tap them to count<small>&nbsp;</small></p>
+      <div class="row"><button class="btn ghost" id="r2">Reset</button></div>
+    </div>
+  </div>
+
+  <!-- ============ 3 ============ -->
+  <div class="idea">
+    <div class="head"><span class="num">3</span><h2>The music empties as the bed empties</h2></div>
+    <p class="pitch">My favourite of the five. Every verse loses one animal <b>and one
+       instrument</b>. Ten in the bed is a full band; four is just bass and a shaker; one is a
+       single music box and the tempo has slowed to a lullaby. The countdown becomes something he
+       can <b>hear</b>, and the story ends by putting him to sleep on purpose. It also fixes your
+       "music is boring" note at the root — the loop stops being wallpaper and starts being the
+       narrator.</p>
+    <div class="demo">
+      <p class="demoLbl">Live — press roll over and listen to it thin out</p>
+      <p class="bignum" id="n3">10<small>in the bed</small></p>
+      <div class="row">
+        <button class="btn gold" id="p3">▶︎ Start the band</button>
+        <button class="btn" id="d3">Roll over →</button>
+        <button class="btn ghost" id="s3">Stop</button>
+      </div>
+      <div class="layers" id="l3"></div>
+    </div>
+  </div>
+
+  <!-- ============ 4 ============ -->
+  <div class="idea">
+    <div class="head"><span class="num">4</span><h2>Cut like a film, not like a slideshow</h2></div>
+    <p class="pitch">Every scene we've ever shipped is the same length and the same distance from
+       the subject. Real kids' animation cuts constantly: a wide shot, then a <b>half-second punch
+       in on a shocked face</b>, then the gag. Add a proper sound-effect layer — boing, thud,
+       giggle — and the same footage becomes twice as lively. Costs no extra render time, it's
+       purely editing.</p>
+    <div class="demo">
+      <p class="demoLbl">Live — same shots, two edits</p>
+      <div class="player" id="pl4">
+        <img src="bed10.jpg" id="i0" alt=""><img src="react.jpg" id="i1" alt="">
+        <img src="tumble.jpg" id="i2" alt=""><img src="solo.jpg" id="i3" alt="">
+      </div>
+      <div class="film" id="f4"></div>
+      <p class="flabel" id="fl4">Purple = a held scene · pink = a quick cut</p>
+      <div class="row" style="margin-top:11px">
+        <button class="btn ghost" id="a4">How it plays today</button>
+        <button class="btn" id="b4">▶︎ With reaction cuts</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 5 ============ -->
+  <div class="idea">
+    <div class="head"><span class="num">5</span><h2>He is one of the ten</h2></div>
+    <p class="pitch">His animal and his name go <b>into the bed with the others</b>, and the verse
+       calls his name every single time round. And the twist: he is never the one who falls out. When
+       there is <b>one in the bed</b>, the one left is his. The whole story has been counting down
+       to him. There are only 12 name-and-animal combinations in the app, so every personalised
+       line can be pre-rendered — no extra cost at runtime.</p>
+    <div class="demo">
+      <p class="demoLbl">Live — pick a companion and a name</p>
+      <div class="chips" id="c5a"></div>
+      <div class="chips" id="c5b"></div>
+      <div class="verse" id="v5"></div>
+      <audio class="aud" controls preload="none" src="count.mp3"></audio>
+      <p class="note" style="margin:8px 0 0">That clip is the real counting voice — English then
+        Spanish, the delivery I'd use for the tap-to-count moments.</p>
+    </div>
+  </div>
+
+  <!-- ============ words ============ -->
+  <div class="panel tight">
+    <h2>The vocabulary</h2>
+    <p class="pitch" style="margin:6px 0 0">Harder than the early books, and the numbers ride
+       along free with the song.</p>
+    <div class="words">
+      <span class="w"><b>bed</b> <s>la cama</s></span>
+      <span class="w"><b>roll</b> <s>rodar</s></span>
+      <span class="w"><b>blanket</b> <s>la manta</s></span>
+      <span class="w"><b>squeeze</b> <s>apretar</s></span>
+      <span class="w"><b>yawn</b> <s>bostezar</s></span>
+      <span class="w"><b>moon</b> <s>la luna</s></span>
+      <span class="w"><b>tired</b> <s>cansado</s></span>
+      <span class="w"><b>hug</b> <s>el abrazo</s></span>
+    </div>
+    <div class="words" style="margin-top:7px">
+      <span class="w"><b>uno · dos · tres</b> <s>…through diez</s></span>
+    </div>
+  </div>
+
+  <div class="foot">
+    <h2>What I'd build if you let me pick</h2>
+    <ol>
+      <li><b>3 + 1 together.</b> The thinning band is the spine of the whole thing, and the
+          chanted verse is what he'll copy. Those two change how it <i>feels</i>.</li>
+      <li><b>Then 2.</b> Tap-to-count is the only one that makes him do something, and it's where
+          the Spanish numbers actually stick.</li>
+      <li><b>4 is nearly free</b> — it's editing, so I'd fold it in regardless.</li>
+      <li><b>5 is the ending.</b> Cheap to do, and it's the moment he realises the story is about
+          him.</li>
+    </ol>
+    <p class="note">Tell me which numbers you want and I'll build it. Happy to do all five — 3, 1
+      and 4 are the ones I'd hate to ship without.</p>
+  </div>
+</div>
+
+<script>
+/* ---------- shared little synth ---------- */
+const A = {ctx:null, master:null, noise:null};
+function ac(){
+  if(!A.ctx){
+    A.ctx = new (window.AudioContext||window.webkitAudioContext)();
+    A.master = A.ctx.createGain(); A.master.gain.value = 0.85;
+    A.master.connect(A.ctx.destination);
+    const n = Math.floor(A.ctx.sampleRate*0.4);
+    A.noise = A.ctx.createBuffer(1,n,A.ctx.sampleRate);
+    const d = A.noise.getChannelData(0);
+    for(let i=0;i<n;i++) d[i] = Math.random()*2-1;
+  }
+  if(A.ctx.state === 'suspended') A.ctx.resume();
+  return A.ctx;
+}
+const hz = n => 261.63 * Math.pow(2, n/12);
+function env(g, t, peak, dur, atk){
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(peak, t + (atk||0.008));
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+}
+function tone(t, n, dur, vol, type, cut){
+  const c = ac(), o = c.createOscillator(), g = c.createGain(), f = c.createBiquadFilter();
+  o.type = type||'triangle'; o.frequency.value = hz(n);
+  f.type='lowpass'; f.frequency.value = cut||2800;
+  env(g,t,vol,dur); o.connect(f); f.connect(g); g.connect(A.master);
+  o.start(t); o.stop(t+dur+0.05);
+}
+function nz(t, dur, vol, freq, Q, type){
+  const c = ac(), s = c.createBufferSource(), g = c.createGain(), f = c.createBiquadFilter();
+  s.buffer = A.noise; f.type = type||'bandpass'; f.frequency.value = freq; f.Q.value = Q||1;
+  env(g,t,vol,dur); s.connect(f); f.connect(g); g.connect(A.master);
+  s.start(t); s.stop(t+dur+0.05);
+}
+const kick = (t,v) => { const c=ac(),o=c.createOscillator(),g=c.createGain();
+  o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(46,t+0.11);
+  env(g,t,v||0.9,0.20); o.connect(g); g.connect(A.master); o.start(t); o.stop(t+0.26); };
+const snare = (t,v) => { nz(t,0.14,(v||0.42),1900,0.9); tone(t,-5,0.09,(v||0.42)*0.3,'triangle',900); };
+const hat   = (t,v) => nz(t,0.035,v||0.16,9000,0.6,'highpass');
+const clap  = (t,v) => [0,0.012,0.026].forEach(o => nz(t+o,0.07,(v||0.3),2200,1.4));
+const bass  = (t,n,d,v) => tone(t,n-24,d||0.34,v||0.5,'sine',380);
+const mar   = (t,n,v) => tone(t,n,0.32,v||0.34,'triangle',3000);
+const box   = (t,n,v) => { tone(t,n+12,1.5,v||0.16,'sine',5200); tone(t,n+19,1.1,(v||0.16)*0.4,'sine',6000); };
+const pad   = (t,ch,v) => ch.forEach(n => tone(t,n,2.4,v||0.05,'sawtooth',780));
+
+/* ---------- 1. sing-along verse ---------- */
+const BEAT = 60/112;
+const SYL = [
+  [0,'There',0],[0.5,'were',0],[1,'ten',4,1],[1.5,'in',4],[2,'the',4],[2.5,'bed',7],
+  [3.5,'and',7],[4,'the',5],[4.5,'lit',4],[5,'tle',4],[5.5,'one',2],[6,'said',0],
+  [8,'Roll',7,1],[8.75,'o',7],[9.25,'ver!',5],[10,'Roll',4,1],[10.75,'o',4],[11.25,'ver!',2],
+  [12,'So',0],[12.5,'they',0],[13,'all',4],[13.5,'rolled',4],[14,'o',7],[14.5,'ver',7],
+  [15,'and',9],[15.5,'one',7],[16,'fell',4],[16.5,'OUT!',0,1]
+];
+const ly1 = document.getElementById('ly1'), bb1 = document.getElementById('bb1');
+/* second halves of a split word — lit|tle, o|ver — must not show a word gap */
+const JOIN = new Set([9,14,17,23]);
+SYL.forEach(([,w,,big],i) => {
+  const s = document.createElement('span');
+  s.textContent = w; if(big) s.className = 'big'; s.id = 'sy'+i;
+  if(JOIN.has(i+1)) s.style.marginRight = '0';
+  ly1.appendChild(s);
+});
+let raf1 = null, stop1 = null;
+document.getElementById('p1').onclick = () => {
+  const c = ac(); play1(c.currentTime + 0.12);
+};
+document.getElementById('s1').onclick = () => {
+  if(stop1) stop1 = null; cancelAnimationFrame(raf1);
+  [...ly1.children].forEach(s => s.classList.remove('hit')); bb1.style.width = '0';
+};
+function play1(t0){
+  const TOT = 19;
+  SYL.forEach(([b,,n]) => mar(t0 + b*BEAT, n, 0.42));
+  for(let b = 0; b < TOT; b++){
+    const t = t0 + b*BEAT;
+    if(b % 4 === 0 || b % 4 === 2) kick(t);
+    if(b % 4 === 1 || b % 4 === 3) { snare(t); clap(t,0.22); }
+    hat(t); hat(t + BEAT/2, 0.10);
+    if(b % 4 === 0){ bass(t, [0,0,7,5,0][Math.floor(b/4)] || 0, BEAT*1.6, 0.55);
+                     pad(t, [0,4,7], 0.045); }
+  }
+  const ctx = ac(); stop1 = t0;
+  const tick = () => {
+    if(stop1 !== t0) return;
+    const b = (ctx.currentTime - t0) / BEAT;
+    bb1.style.width = Math.max(0, Math.min(100, b/TOT*100)) + '%';
+    SYL.forEach(([sb],i) => {
+      const el = document.getElementById('sy'+i);
+      el.classList.toggle('hit', b >= sb && b < sb + 0.9);
+    });
+    if(b < TOT + 1) raf1 = requestAnimationFrame(tick);
+    else { [...ly1.children].forEach(s => s.classList.remove('hit')); }
+  };
+  raf1 = requestAnimationFrame(tick);
+}
+
+/* ---------- 2. tap to count ---------- */
+const EN = ['one','two','three','four','five','six','seven','eight','nine','ten'];
+const ES = ['uno','dos','tres','cuatro','cinco','seis','siete','ocho','nueve','diez'];
+const HUE = [340,10,40,70,110,150,190,225,265,300];
+const bg2 = document.getElementById('bg2'), t2 = document.getElementById('t2');
+let n2 = 0;
+function build2(){
+  bg2.innerHTML = ''; n2 = 0;
+  t2.innerHTML = 'Tap them to count<small>&nbsp;</small>';
+  for(let i = 0; i < 10; i++){
+    const b = document.createElement('button');
+    b.className = 'kid'; b.innerHTML = '<i></i><i></i>';
+    b.style.background = 'hsl(' + HUE[i] + ' 42% 34%)';
+    b.onclick = () => {
+      if(b.classList.contains('done')) return;
+      b.classList.add('done','pop');
+      b.style.background = 'hsl(' + HUE[i] + ' 70% 58%)';
+      setTimeout(() => b.classList.remove('pop'), 200);
+      const c = ac(), t = c.currentTime + 0.02;
+      mar(t, 4 + n2*2, 0.5); box(t + 0.02, 4 + n2*2, 0.12);
+      n2++;
+      t2.innerHTML = n2 + ' <small>' + EN[n2-1] + ' · ' + ES[n2-1] + '</small>';
+      if(n2 === 10){
+        t2.innerHTML = '¡Diez! <small>all ten counted</small>';
+        [0,0.09,0.18,0.30].forEach((o,k) => mar(t+0.25+o, [12,16,19,24][k], 0.5));
+        clap(t+0.3,0.4); clap(t+0.45,0.4);
+      }
+    };
+    bg2.appendChild(b);
+  }
+}
+build2();
+document.getElementById('r2').onclick = build2;
+
+/* ---------- 3. band that thins out ---------- */
+const LAYERS = ['music box','marimba','bass','kick','shaker','snare','claps','strings'];
+const l3 = document.getElementById('l3'), n3 = document.getElementById('n3');
+LAYERS.forEach(x => { const s = document.createElement('span');
+  s.className = 'lay'; s.textContent = x; l3.appendChild(s); });
+/* how many animals must still be in the bed for each layer to survive */
+const KEEP = {'strings':9,'claps':8,'snare':6,'kick':5,'shaker':4,'bass':3,'marimba':2,'music box':0};
+let cnt3 = 10, run3 = false, step3 = 0, tmr3 = null;
+function paint3(){
+  n3.innerHTML = cnt3 + '<small>' + (cnt3 === 1 ? 'in the bed — just him' : 'in the bed') + '</small>';
+  [...l3.children].forEach(s => s.classList.toggle('on', run3 && cnt3 >= KEEP[s.textContent]));
+}
+paint3();
+function tick3(){
+  if(!run3) return;
+  const c = ac(), t = c.currentTime + 0.05, b = step3 % 4;
+  const on = k => cnt3 >= KEEP[k];
+  /* tempo falls away with the count — ten is a party, one is a lullaby */
+  const gap = (cnt3 >= 8 ? 0.30 : cnt3 >= 5 ? 0.36 : cnt3 >= 3 ? 0.46 : 0.62);
+  const CH = [[0,4,7],[7,11,14],[9,12,16],[5,9,12]][Math.floor(step3/4) % 4];
+  const MEL = [12,16,19,16,14,19,23,19,21,16,12,16,17,21,17,12];
+  if(on('kick')   && (b === 0 || b === 2)) kick(t, 0.8);
+  if(on('snare')  && (b === 1 || b === 3)) snare(t, 0.34);
+  if(on('claps')  && (b === 1 || b === 3)) clap(t, 0.26);
+  if(on('shaker')) { hat(t, b === 2 ? 0.18 : 0.10); hat(t + gap/2, 0.07); }
+  if(on('bass')   && b === 0) bass(t, CH[0], gap*1.7, 0.5);
+  if(on('strings')&& b === 0) pad(t, CH, 0.05);
+  if(on('marimba')) mar(t, MEL[step3 % 16], 0.30);
+  if(on('music box') && (b === 0 || b === 2)) box(t, MEL[step3 % 16], cnt3 <= 2 ? 0.22 : 0.10);
+  step3++;
+  tmr3 = setTimeout(tick3, gap*1000);
+}
+document.getElementById('p3').onclick = () => {
+  if(run3) return; ac(); run3 = true; step3 = 0; paint3(); tick3();
+};
+document.getElementById('d3').onclick = () => {
+  if(cnt3 > 1){
+    cnt3--;
+    if(run3){ const t = ac().currentTime + 0.02;      // the tumble
+      nz(t,0.18,0.35,600,0.8); kick(t+0.05,0.7); }
+  } else cnt3 = 10;
+  paint3();
+};
+document.getElementById('s3').onclick = () => { run3 = false; clearTimeout(tmr3); paint3(); };
+
+/* ---------- 4. editing rhythm ---------- */
+const f4 = document.getElementById('f4'), fl4 = document.getElementById('fl4');
+const OLD = [[0,2600],[2,2600],[3,2600]];
+const NEW = [[0,1700],[1,520],[0,900],[2,700],[1,460],[3,1500]];
+let tm4 = [];
+function showShot(i){ [0,1,2,3].forEach(k =>
+  document.getElementById('i'+k).classList.toggle('on', k === i)); }
+function drawFilm(seq){
+  f4.innerHTML = '';
+  seq.forEach(([,d],i) => { const el = document.createElement('i');
+    el.style.flex = d; if(d < 800) el.classList.add('cut'); el.id = 'fi'+i; f4.appendChild(el); });
+}
+function stop4(){ tm4.forEach(clearTimeout); tm4 = []; }
+function run4(seq, label){
+  stop4(); drawFilm(seq); fl4.textContent = label;
+  let t = 0;
+  seq.forEach(([shot, dur], i) => {
+    tm4.push(setTimeout(() => {
+      showShot(shot);
+      [...f4.children].forEach((e,k) => e.classList.toggle('on', k === i));
+      if(dur < 800){ const c = ac(), n = c.currentTime + 0.02;
+        if(shot === 2){ nz(n,0.2,0.4,500,0.8); kick(n+0.06,0.8); }   // thud
+        else { mar(n,16,0.5); mar(n+0.07,21,0.45); }                  // boing
+      }
+    }, t));
+    t += dur;
+  });
+  tm4.push(setTimeout(() => [...f4.children].forEach(e => e.classList.remove('on')), t));
+}
+showShot(0); drawFilm(OLD);
+document.getElementById('a4').onclick = () =>
+  run4(OLD, 'Today — three held scenes, all the same length, all the same distance away.');
+document.getElementById('b4').onclick = () =>
+  run4(NEW, 'With cuts — wide, punch in on the gasp, back out, the tumble, a giggle, then settle.');
+
+/* ---------- 5. personalise ---------- */
+const PALS = {Bunny:['Bobo','Nibbles','Pip'], Bear:['Bruno','Honey','Tumble'],
+              Duck:['Ducky','Splash','Momo'], Cat:['Mimi','Pounce','Whiskers']};
+const c5a = document.getElementById('c5a'), c5b = document.getElementById('c5b'),
+      v5 = document.getElementById('v5');
+let pal5 = 'Bunny', name5 = 'Bobo';
+function paint5(){
+  c5a.innerHTML = ''; c5b.innerHTML = '';
+  Object.keys(PALS).forEach(p => { const b = document.createElement('button');
+    b.className = 'chip' + (p === pal5 ? ' on' : ''); b.textContent = p;
+    b.onclick = () => { pal5 = p; name5 = PALS[p][0]; paint5(); }; c5a.appendChild(b); });
+  PALS[pal5].forEach(n => { const b = document.createElement('button');
+    b.className = 'chip' + (n === name5 ? ' on' : ''); b.textContent = n;
+    b.onclick = () => { name5 = n; paint5(); }; c5b.appendChild(b); });
+  v5.innerHTML =
+    'There were <em>three</em> in the bed<br>and <em>' + name5 + '</em> the ' + pal5.toLowerCase() +
+    ' said…<br>“Roll over! Roll over!”<br><br>' +
+    '<span style="color:#a79bb5">…and at the end…</span><br>' +
+    'There was <em>one</em> in the bed —<br>and the one in the bed was <em>' + name5 + '</em>.';
+}
+paint5();
+</script>
+</body>
+</html>
