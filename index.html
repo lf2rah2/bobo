@@ -88,6 +88,25 @@ body{
 
 #bgRoom{position:absolute;inset:0;opacity:0;transition:opacity .45s}
 #bgPlate{position:absolute;inset:0;opacity:0;transition:opacity .5s;background-size:cover;background-position:center bottom}
+/* second plate so stills can cross-fade the way the video scenes do */
+#bgPlateB{position:absolute;inset:0;opacity:0;transition:opacity .5s;background-size:cover;background-position:center}
+/* a still that never moves reads as a slideshow, so each one drifts slowly */
+.zA{animation:kbIn 11s ease-out both}
+.zB{animation:kbOut 11s ease-out both}
+@keyframes kbIn {from{transform:scale(1.00)}to{transform:scale(1.10)}}
+@keyframes kbOut{from{transform:scale(1.09)}to{transform:scale(1.00)}}
+/* tap-to-count hotspots, positioned over the animals in the scene itself */
+#tapc{position:absolute;inset:0;z-index:13;pointer-events:none;opacity:0;transition:opacity .3s}
+#tapc.on{opacity:1;pointer-events:auto}
+.tapDot{position:absolute;width:84px;height:84px;margin:-42px 0 0 -42px;border-radius:50%;
+  border:3px dashed rgba(255,255,255,.92);background:rgba(255,255,255,.12);padding:0;
+  animation:tapPulse 1.5s ease-in-out infinite}
+.tapDot.got{animation:none;border-style:solid;border-color:#6fe3c4;background:rgba(111,227,196,.3)}
+.tapDot i{font-style:normal;font-weight:800;font-size:34px;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.5)}
+@keyframes tapPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+/* the chant sweep — one word lights at a time so a pre-reader can follow */
+#narr b.cw{font-weight:800;opacity:.55;transition:opacity .12s,color .12s}
+#narr b.cw.hit{opacity:1;color:#ffd76a}
 #layer{position:absolute;inset:0;transition:opacity .34s,transform .5s cubic-bezier(.22,1,.36,1)}
 .it{position:absolute;pointer-events:none}
 .it.fade{animation:itFade .55s ease both}
@@ -336,9 +355,11 @@ body{
       <div id="bgArt"></div>
       <div id="bgRoom"></div>
       <div id="bgPlate"></div>
+      <div id="bgPlateB"></div>
       <video id="vidA" class="vid" playsinline muted loop preload="auto"></video>
       <video id="vidB" class="vid" playsinline muted loop preload="auto"></video>
       <div id="layer"></div>
+      <div id="tapc"></div>
       <button id="bookBtn"><span>📖</span><span id="bookCount">0</span></button>
       <div id="wtag"><div class="pic"><span class="art"></span></div>
         <div class="tx"><b></b><span></span></div></div>
@@ -773,6 +794,10 @@ const V = {
   giant:{rate:.82, pitch:.8,   k:'giant'},
   unarr:{rate:.86, pitch:1.0,  k:'unarr'},
   upal :{rate:.94, pitch:1.5,  k:'upal'},
+  bnarr:{rate:.88, pitch:1.0,  k:'bnarr'},
+  bpal :{rate:.94, pitch:1.5,  k:'bpal'},
+  blamb:{rate:.92, pitch:1.35, k:'blamb'},
+  bpig :{rate:.96, pitch:1.45, k:'bpig'},
   trav :{rate:.88, pitch:.95,  k:'trav'},
   woman:{rate:.94, pitch:1.15, k:'woman'},
   child:{rate:1.0, pitch:1.5,  k:'child'},
@@ -805,6 +830,13 @@ function allSpeech(){
   Object.keys(DUCK_LINES).forEach(k => add(DUCK_LINES[k], DUCK_VOICE[k] || 'dnarr'));
   Object.keys(MOMO_LINES).forEach(k => add(MOMO_LINES[k], MOMO_VOICE[k] || 'mnarr'));
   Object.keys(SOUP_LINES).forEach(k => add(SOUP_LINES[k], SOUP_VOICE[k] || 'unarr'));
+  /* the counting verses name the child's companion, so every name is rendered */
+  Object.keys(BED_LINES).forEach(k => {
+    const t = BED_LINES[k], v = BED_VOICE[k] || 'bnarr';
+    if(t.indexOf('{n}') >= 0) names.forEach(n => add(t.replace('{n}', n), v));
+    else add(t, v);
+  });
+  COUNT_EN.forEach((_, i) => add(countLine(i), 'bpal'));
   const ALLW = {};
   Object.keys(WORD_PIGS).forEach(k => ALLW[k] = WORD_PIGS[k]);
   Object.keys(WORD_SPIDER).forEach(k => ALLW[k] = WORD_SPIDER[k]);
@@ -813,10 +845,12 @@ function allSpeech(){
   Object.keys(WORD_DUCK).forEach(k => { if(!ALLW[k]) ALLW[k] = WORD_DUCK[k]; });
   Object.keys(WORD_MOMO).forEach(k => { if(!ALLW[k]) ALLW[k] = WORD_MOMO[k]; });
   Object.keys(WORD_SOUP).forEach(k => { if(!ALLW[k]) ALLW[k] = WORD_SOUP[k]; });
+  Object.keys(WORD_BED).forEach(k => { if(!ALLW[k]) ALLW[k] = WORD_BED[k]; });
   Object.keys(ALLW).forEach(k => {
     const w = ALLW[k];
     if(w.star){
-      const pv = WORD_DUCK[k] ? 'dpal' : WORD_MOMO[k] ? 'mpal' : WORD_SOUP[k] ? 'upal' : 'pal';
+      const pv = WORD_DUCK[k] ? 'dpal' : WORD_MOMO[k] ? 'mpal' : WORD_SOUP[k] ? 'upal'
+               : WORD_BED[k] ? 'bpal' : 'pal';
       add('Say it with me. ' + w.en + '!', pv);
       add('Yes! ' + w.en + '!', pv);
       add(w.en + '!', pv);
@@ -891,19 +925,63 @@ const Music = {
     s.connect(f); f.connect(g); g.connect(this.master);
     s.start(when); s.stop(when + 0.12);
   },
+  /* percussion — only used in band mode, so the other six stories are untouched */
+  kick(t, v){
+    const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+    o.frequency.setValueAtTime(150, t);
+    o.frequency.exponentialRampToValueAtTime(46, t + 0.11);
+    g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+    o.connect(g); g.connect(this.master); o.start(t); o.stop(t + 0.26);
+  },
+  snare(t, v){ this.burst(t, v, 1900, 0.9, 0.14, 'bandpass'); },
+  hat(t, v){   this.burst(t, v, 9000, 0.6, 0.035, 'highpass'); },
+  clap(t, v){  [0, 0.012, 0.026].forEach(o => this.burst(t + o, v, 2200, 1.4, 0.07, 'bandpass')); },
+  burst(t, vol, freq, q, dur, type){
+    const s = this.ctx.createBufferSource(); s.buffer = this.noise;
+    const g = this.ctx.createGain(), f = this.ctx.createBiquadFilter();
+    f.type = type; f.frequency.value = freq; f.Q.value = q;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(f); f.connect(g); g.connect(this.master);
+    s.start(t); s.stop(t + dur + 0.05);
+  },
+  /* BAND MODE — the arrangement thins out as the bed empties, so the countdown
+     is something you can hear. Five in the bed is a full band; one is a music
+     box. Off by default; only Five in the Bed switches it on. */
+  band:false,
+  layers:{box:1, mar:1, bass:1, kick:1, hat:1, snare:1, clap:1, pad:1},
+  bed(n){
+    this.band = true;
+    const keep = {pad:5, clap:5, snare:4, kick:3, hat:3, bass:2, mar:2, box:0};
+    Object.keys(keep).forEach(k => this.layers[k] = n >= keep[k]);
+    this.gap = n >= 5 ? 400 : n >= 4 ? 430 : n >= 3 ? 470 : n >= 2 ? 540 : 680;
+  },
+  calm(){ this.band = false; this.mood('calm'); },
   tick(){
     if(!this.started) return;
     const t = this.ctx.currentTime + 0.06;
     const bar = Math.floor(this.step / 4) % this.prog.length;
     const ch  = this.prog[bar];
     const beat = this.step % 4;
-    /* melody sits on top */
-    this.note(this.mel[this.step % this.mel.length], t, 0.9, 0.085);
-    if(beat === 0){
-      ch.forEach(n => this.note(n, t, 2.1, 0.024, 'sine', 1500));   // warm pad
-      this.note(ch[0] - 24, t, 1.9, 0.070, 'sine', 420);            // bass
+    if(this.band){
+      const L = this.layers, g = this.gap / 1000;
+      if(L.kick  && (beat === 0 || beat === 2)) this.kick(t, 0.85);
+      if(L.snare && (beat === 1 || beat === 3)) this.snare(t, 0.30);
+      if(L.clap  && (beat === 1 || beat === 3)) this.clap(t, 0.22);
+      if(L.hat){ this.hat(t, beat === 2 ? 0.15 : 0.085); this.hat(t + g/2, 0.055); }
+      if(L.bass && beat === 0) this.note(ch[0] - 24, t, 1.9, 0.080, 'sine', 420);
+      if(L.pad  && beat === 0) ch.forEach(n => this.note(n, t, 2.1, 0.024, 'sine', 1500));
+      if(L.mar) this.note(this.mel[this.step % this.mel.length], t, 0.5, 0.075, 'triangle', 3000);
+      if(L.box && (beat === 0 || beat === 2))
+        this.note(this.mel[this.step % this.mel.length] + 12, t, 1.5, L.mar ? 0.05 : 0.11, 'sine', 5200);
+    } else {
+      /* melody sits on top */
+      this.note(this.mel[this.step % this.mel.length], t, 0.9, 0.085);
+      if(beat === 0){
+        ch.forEach(n => this.note(n, t, 2.1, 0.024, 'sine', 1500));   // warm pad
+        this.note(ch[0] - 24, t, 1.9, 0.070, 'sine', 420);            // bass
+      }
+      this.shake(t, beat === 2 ? 0.030 : 0.014);
     }
-    this.shake(t, beat === 2 ? 0.030 : 0.014);
     this.step++;
     this.timer = setTimeout(() => this.tick(), this.gap);
   },
@@ -980,8 +1058,14 @@ function playBuffer(buf){
     s.buffer = buf;
     s.connect(Music.ctx.destination);
     AUD.src = s;
-    s.onended = () => { if(AUD.src === s) AUD.src = null; res(true); };
-    try{ s.start(); }catch(e){ res(false); }
+    let done = false;
+    const fin = ok => { if(done) return; done = true; clearTimeout(tm);
+                        if(AUD.src === s) AUD.src = null; res(ok); };
+    /* a suspended context never fires onended, which would stall the story
+       for good — always have a clock running alongside it */
+    const tm = setTimeout(() => fin(true), (buf.duration + 1.2) * 1000);
+    s.onended = () => fin(true);
+    try{ s.start(); }catch(e){ fin(false); }
   });
 }
 /* fallback for anything without a usable AudioContext: ONE shared element */
@@ -1313,12 +1397,153 @@ function stopVideo(){
 }
 
 /* =========================================================
+   STILL SCENES — the same cross-fade the video stories use, but for
+   photographs. Each one drifts slowly so a held frame still breathes.
+   ========================================================= */
+const Plate = {slot:0, dir:'art7', list:[], warm:{}};
+const plateEl = i => $(i ? 'bgPlateB' : 'bgPlate');
+function warmPlates(list){ Plate.list = list; preloadPlate(list[0]); preloadPlate(list[1]); }
+function preloadPlate(name){
+  if(!name || Plate.warm[name]) return;
+  Plate.warm[name] = 1;
+  const im = new Image(); im.src = Plate.dir + '/' + name + '.jpg';
+}
+async function ishot(name){
+  if(stopFlag) return;
+  const cur = plateEl(Plate.slot), nxt = plateEl(Plate.slot ^ 1);
+  const url = Plate.dir + '/' + name + '.jpg';
+  /* never cut to an empty frame — wait for the bitmap, then swap */
+  await Promise.race([
+    new Promise(r => { const im = new Image(); im.onload = r; im.onerror = r; im.src = url; }),
+    wait(4000)
+  ]);
+  if(stopFlag) return;
+  nxt.style.backgroundImage = 'url("' + url + '")';
+  nxt.classList.remove('zA','zB');
+  void nxt.offsetWidth;                      // restart the drift on every scene
+  nxt.classList.add(Plate.slot ? 'zA' : 'zB');
+  nxt.style.opacity = '1';
+  cur.style.opacity = '0';
+  Plate.slot ^= 1;
+  Plate.cur = name;
+  const i = Plate.list.indexOf(name);
+  if(i >= 0) preloadPlate(Plate.list[i + 1]);
+  await wait(430);
+}
+function stopPlates(){
+  ['bgPlate','bgPlateB'].forEach(id => {
+    const p = $(id); p.style.opacity = '0'; p.style.backgroundImage = '';
+    p.classList.remove('zA','zB');
+  });
+  Plate.slot = 0;
+}
+
+/* =========================================================
+   CHANT — the refrain, with one word lighting at a time. The voice engine
+   cannot sing (measured: a "singing" take is indistinguishable from plain
+   speech), so the instruments carry the tune and the words ride the beat.
+   ========================================================= */
+function clearChant(){
+  [...document.querySelectorAll('#narr b.cw')].forEach(e => e.classList.remove('hit'));
+}
+function chantSweep(words, dur){
+  /* weight by word length so the sweep tracks the reading rather than
+     stepping evenly through words of very different sizes */
+  const wt = words.map(w => w.length + 2), tot = wt.reduce((a,b) => a+b, 0);
+  const t0 = performance.now(), mine = AUD.gen;
+  const step = () => {
+    if(stopFlag || mine !== AUD.gen) return clearChant();
+    const el = (performance.now() - t0) / 1000;
+    let acc = 0, hit = -1;
+    for(let i = 0; i < words.length; i++){ acc += wt[i]/tot*dur; if(el < acc){ hit = i; break; } }
+    words.forEach((_, i) => {
+      const e = $('cw' + i); if(e) e.classList.toggle('hit', i === hit);
+    });
+    if(el < dur) requestAnimationFrame(step); else clearChant();
+  };
+  requestAnimationFrame(step);
+}
+async function chant(text, opt){
+  if(stopFlag) return;
+  setSpeaker(opt && opt.k);
+  const clean = text.replace(/\[[^\]]*\]\s*/g, '').trim();
+  const words = clean.split(/\s+/);
+  $('narr').innerHTML = words.map((w, i) => '<b class="cw" id="cw' + i + '">' + w + '</b>').join(' ');
+  $('speaker').classList.add('talk');
+  const f = AUD.ok && AUD.map[text];
+  let done = false;
+  if(f && Music.ctx){
+    stopSpeech();
+    const mine = ++AUD.gen;
+    const buf = await clipBuffer(f);
+    if(buf && mine === AUD.gen && !stopFlag){
+      chantSweep(words, buf.duration);       // the clip's real length drives the sweep
+      Music.duck(true); await playBuffer(buf); Music.duck(false);
+      done = true;
+    } else if(buf) done = true;
+  }
+  if(!done && !stopFlag){
+    chantSweep(words, Math.max(1.4, clean.length * 0.062));
+    await speak(text, opt);
+  }
+  clearChant();
+  $('speaker').classList.remove('talk');
+  if(!stopFlag) await wait(200);
+}
+
+/* =========================================================
+   TAP TO COUNT — he taps the animals in the scene itself. Never blocks:
+   if he does not tap, the companion counts the rest and the story moves on.
+   ========================================================= */
+const COUNT_EN = ['one','two','three','four','five'];
+const COUNT_ES = ['uno','dos','tres','cuatro','cinco'];
+const countLine = i => COUNT_EN[i] + '... ' + COUNT_ES[i] + '!';
+async function tapCount(spots, voice){
+  if(stopFlag) return;
+  const c = $('tapc'), st = $('stage').getBoundingClientRect();
+  /* the plate is background-size:cover, so work out where the picture
+     actually sits before placing anything on top of it */
+  const IW = 720, IH = 1280;
+  const sc = Math.max(st.width / IW, st.height / IH);
+  const ox = (st.width - IW * sc) / 2, oy = (st.height - IH * sc) / 2;
+  c.innerHTML = ''; c.classList.add('on');
+  let n = 0, resolve;
+  const dots = spots.map((p, i) => {
+    const b = document.createElement('button');
+    b.className = 'tapDot';
+    b.style.left = (ox + p[0]/100 * IW * sc) + 'px';
+    b.style.top  = (oy + p[1]/100 * IH * sc) + 'px';
+    b.onclick = () => hit(b);
+    c.appendChild(b);
+    return b;
+  });
+  async function hit(b){
+    if(b.classList.contains('got') || stopFlag) return;
+    b.classList.add('got');
+    b.innerHTML = '<i>' + (++n) + '</i>';
+    if(Music.ctx) Music.note(4 + n*3, Music.ctx.currentTime + 0.02, 0.4, 0.22, 'triangle', 3200);
+    await speak(countLine(n - 1), voice);
+    if(n === dots.length && resolve) resolve();
+  }
+  const finished = new Promise(r => { resolve = r; });
+  /* invitation, never a gate — 8 seconds, then we count them together */
+  await Promise.race([finished, wait(8000)]);
+  for(const b of dots){
+    if(stopFlag) break;
+    if(!b.classList.contains('got')){ await hit(b); await wait(120); }
+  }
+  await wait(500);
+  c.classList.remove('on'); c.innerHTML = '';
+}
+
+/* =========================================================
    SPEAKER PORTRAIT — for stories that keep the companion out of
    the scene, the dialogue bar shows who is talking instead.
    ========================================================= */
 const palFace = () => 'art3/p-' + (S.pal === 'cat' ? 'cat2' : S.pal) + '.png';
 const FACE = {narr:palFace, pal:palFace, slow:palFace, dnarr:palFace, dpal:palFace,
-  mnarr:palFace, mpal:palFace, unarr:palFace, upal:palFace,
+  mnarr:palFace, mpal:palFace, unarr:palFace, upal:palFace, bnarr:palFace, bpal:palFace,
+  blamb:() => 'art7/p-lamb.png', bpig:() => 'art7/p-piglet.png',
   trav:() => 'art6/p-trav.png', woman:() => 'art6/p-woman.png', child:() => 'art6/p-child.png',
   momo:() => 'art5/p-momo.png',   gran:() => 'art5/p-gran.png',
   dog:() => 'art5/p-dog.png',     monkey:() => 'art5/p-monkey.png',
@@ -1328,7 +1553,8 @@ const FACE = {narr:palFace, pal:palFace, slow:palFace, dnarr:palFace, dpal:palFa
   queen:() => 'art3/p-queen.png',   hatter:() => 'art3/p-hatter.png'};
 const WHO = {narr:() => S.name, pal:() => S.name, slow:() => S.name,
   dnarr:() => S.name, dpal:() => S.name, mnarr:() => S.name, mpal:() => S.name,
-  unarr:() => S.name, upal:() => S.name,
+  unarr:() => S.name, upal:() => S.name, bnarr:() => S.name, bpal:() => S.name,
+  blamb:() => 'Lamb', bpig:() => 'Piglet',
   trav:() => 'The Traveller', woman:() => 'A Villager', child:() => 'The Little Girl',
   momo:() => 'Momotaro', gran:() => 'Grandmother', dog:() => 'The Dog',
   monkey:() => 'The Monkey', giant:() => 'The Giant',
@@ -1827,6 +2053,7 @@ async function runGB(){
    ========================================================= */
 function tagArt(w){
   if(w.art === 'up' || w.art === 'down') return arrowArt(w.art);
+  if(STORY === 'bed'    && BEDART[w.art]) return BEDART[w.art];
   if(STORY === 'soup'   && SOUP[w.art])  return SOUP[w.art];
   if(STORY === 'momo'   && PEACH[w.art]) return PEACH[w.art];
   if(STORY === 'duck'   && UGLY[w.art])  return UGLY[w.art];
@@ -1871,7 +2098,7 @@ function bankWord(key){
    A few words are marked star — those get one short turn for the child to
    echo, without ever leaving the scene or dimming it. */
 const palVoice = () => STORY === 'duck' ? V.dpal : STORY === 'momo' ? V.mpal :
-                       STORY === 'soup' ? V.upal : V.pal;
+                       STORY === 'soup' ? V.upal : STORY === 'bed' ? V.bpal : V.pal;
 async function sayWord(key, text, voice, highlightId){
   if(stopFlag) return;
   const w = WORDS[key], t = $('wtag');
@@ -2635,6 +2862,155 @@ async function runSoup(){
   openBook();
 }
 
+/* =========================================================
+   STORY 8 — Five in the Bed (3D Pixar, still scenes)
+   The counting song, with the band thinning out as the bed empties.
+   ========================================================= */
+const BEDART = {};
+'bed roll squeeze blanket yawn moon hug'.split(' ').forEach(w => {
+  BEDART[w] = '<img src="art7/w-' + w + '.png" alt="" draggable="false" ' +
+              'style="width:100%;height:auto;display:block">';
+});
+
+const WORD_BED = {
+  bed:    {en:'bed',    es:'la cama',   art:'bed',     star:true,
+           reveal:"That is their big cosy bed.",        reveal2:"Bed. I will remember that!"},
+  roll:   {en:'roll',   es:'rodar',     art:'roll',    star:true,
+           reveal:"Over they go, rolling and rolling!", reveal2:"Roll. I will remember that!"},
+  squeeze:{en:'squeeze',es:'apretar',   art:'squeeze', star:true,
+           reveal:"They squeeze up close to make room.",reveal2:"Squeeze. I will remember that!"},
+  blanket:{en:'blanket',es:'la manta',  art:'blanket', star:true,
+           reveal:"That warm blanket keeps them cosy.", reveal2:"Blanket. I will remember that!"},
+  yawn:   {en:'yawn',   es:'bostezar',  art:'yawn',    star:true,
+           reveal:"What a great big sleepy yawn!",      reveal2:"Yawn. I will remember that!"},
+  moon:   {en:'moon',   es:'la luna',   art:'moon',    star:true,
+           reveal:"The big round moon is shining.",     reveal2:"Moon. I will remember that!"},
+  hug:    {en:'hug',    es:'el abrazo', art:'hug',     star:true,
+           reveal:"They are all having one big warm hug.", reveal2:"Hug. I will remember that!"}
+};
+
+const BED_LINES = {
+  bGreet: "[warmly] Ooh, this one is a counting song! Will you count with me?",
+  bNight: "[gently] It was bedtime. The moon was up, and the big bed was waiting.",
+  bPile:  "[playfully] And in they came! Five little friends, all in their pyjamas.",
+  bFive:  "[brightly] Five in the bed!",
+  bCount: "[cheerfully] Tap each one, and let us count them together!",
+  bRoll5: "[excitedly] There were five in the bed and {n} said — roll over! Roll over!",
+  bLand5: "[laughing] So they all rolled over and — whoops! Penguin flopped into the toy box.",
+  bFour:  "[warmly] Four in the bed. Everybody squeeze up!",
+  bRoll4: "[excitedly] There were four in the bed and {n} said — roll over! Roll over!",
+  bFoxOut:"[laughing] And off sprang Fox, right over the end of the bed!",
+  bThree: "[playfully] Three in the bed, all pulling the blanket.",
+  bRoll3: "[excitedly] There were three in the bed and {n} said — roll over! Roll over!",
+  bPupOut:"[laughing] And Puppy went bump, right onto the rug!",
+  bTwo:   "[quietly] Two in the bed. Just Lamb and Piglet now.",
+  bYawn:  "[sleepily] Piglet gave a great big yawn... and rolled right over.",
+  bOne:   "[quietly] And then there was one. One little lamb, in a very big bed.",
+  bLamb:  "[sadly] It is so quiet. I do not like it all on my own.",
+  bLonely:"[softly] She looked up at the big round moon, and gave a tiny sigh.",
+  bJoin:  "[warmly] But then {n} climbed up beside her.",
+  bStay:  "[warmly] I will stay with you. Nobody should be the only one.",
+  bLambY: "[happily] You came back for me!",
+  bBack:  "[joyfully] And all the friends came running back for the biggest hug of all!",
+  bSleep: "[gently] Everybody back in the bed. Warm, and safe, and fast asleep.",
+  bEnd:   "[gently] Goodnight, little friends. Goodnight.",
+  bThanks:"[warmly] Nobody likes being the only one. [brightly] Look at all our new words!"
+};
+const BED_VOICE = {bGreet:'bpal', bCount:'bpal', bThanks:'bpal', bStay:'bpal',
+                   bLamb:'blamb', bLambY:'blamb', bYawn:'bpig'};
+
+/* where each animal's face sits in the "five" frame, as a percentage of the
+   picture — measured off the render, not guessed */
+const BED_SPOTS = [[32,32], [63,33], [56,47], [61,63], [64,75]];
+
+async function runBed(){
+  stopFlag = false;
+  WORDS = WORD_BED;
+  $('bookCount').textContent = learned().length;
+  Plate.dir = 'art7';
+  const P = S.pal;
+  warmPlates(['night','pile','five','roll5','land5','four','roll4','three','roll3','two',
+              'yawn','one','lonely','join_' + P, 'back_' + P, 'sleep']);
+  paint([]);
+  $('bgPlate').style.opacity = '0';
+  $('bgPlateB').style.opacity = '0';
+  $('bgArt').style.opacity  = '0';
+  $('bgRoom').style.opacity = '0';
+  setSpeaker('bnarr');
+  const U = {};
+  Object.keys(BED_LINES).forEach(k => U[k] = BED_LINES[k].replace('{n}', S.name));
+
+  await ishot('night');
+  await line(U.bGreet, V.bpal);   if(stopFlag) return;
+  await line(U.bNight, V.bnarr);  if(stopFlag) return;
+
+  await ishot('pile');
+  await sayWord('bed', U.bPile, V.bnarr);   if(stopFlag) return;
+
+  /* five in the bed — the full band, and he counts them himself */
+  Music.bed(5);
+  await ishot('five');
+  await line(U.bFive, V.bnarr);   if(stopFlag) return;
+  await line(U.bCount, V.bpal);   if(stopFlag) return;
+  await tapCount(BED_SPOTS, V.bpal);   if(stopFlag) return;
+
+  await ishot('roll5');
+  await chant(U.bRoll5, V.bnarr);            if(stopFlag) return;
+  await sayWord('roll', U.bLand5, V.bnarr);  if(stopFlag) return;
+
+  await ishot('land5');
+  await wait(300);
+
+  Music.bed(4);
+  await ishot('four');
+  await sayWord('squeeze', U.bFour, V.bnarr);   if(stopFlag) return;
+
+  await ishot('roll4');
+  await chant(U.bRoll4, V.bnarr);   if(stopFlag) return;
+  await line(U.bFoxOut, V.bnarr);   if(stopFlag) return;
+
+  Music.bed(3);
+  await ishot('three');
+  await sayWord('blanket', U.bThree, V.bnarr);   if(stopFlag) return;
+  await chant(U.bRoll3, V.bnarr);                if(stopFlag) return;
+
+  await ishot('roll3');
+  await line(U.bPupOut, V.bnarr);   if(stopFlag) return;
+
+  Music.bed(2);
+  await ishot('two');
+  await line(U.bTwo, V.bnarr);   if(stopFlag) return;
+
+  await ishot('yawn');
+  await sayWord('yawn', U.bYawn, V.bpig);   if(stopFlag) return;
+
+  Music.bed(1);
+  await ishot('one');
+  await line(U.bOne, V.bnarr);   if(stopFlag) return;
+  await line(U.bLamb, V.blamb);  if(stopFlag) return;
+
+  await ishot('lonely');
+  await sayWord('moon', U.bLonely, V.bnarr);   if(stopFlag) return;
+
+  await ishot('join_' + P);
+  await line(U.bJoin, V.bnarr);   if(stopFlag) return;
+  await line(U.bStay, V.bpal);    if(stopFlag) return;
+  await line(U.bLambY, V.blamb);  if(stopFlag) return;
+
+  /* everyone comes back, and the whole band comes back with them */
+  Music.bed(5);
+  await ishot('back_' + P);
+  await sayWord('hug', U.bBack, V.bnarr);   if(stopFlag) return;
+
+  Music.bed(1);
+  await ishot('sleep');
+  await line(U.bSleep, V.bnarr);   if(stopFlag) return;
+  await line(U.bEnd, V.bnarr);     if(stopFlag) return;
+  await line(U.bThanks, V.bpal);   if(stopFlag) return;
+  Music.calm();
+  openBook();
+}
+
 const STORIES = {
   pigs:   {title:'The Three Little Pigs', sub:'7 words to teach',       thumb:'',                      words:WORD_PIGS,   run:runPigs,   lines:LINE},
   spider: {title:'Itsy Bitsy Spider',     sub:'9 words · claymation',   thumb:'art/bg/bg-rainbow.jpg', pos:'center top', words:WORD_SPIDER, run:runSpider, lines:SPIDER_LINES},
@@ -2642,7 +3018,8 @@ const STORIES = {
   alice:  {title:'Alice in Wonderland',   sub:'a dream · moving film',  thumb:'art3/poster.jpg',       pos:'center 30%',  words:WORD_ALICE,  run:runAlice,  lines:ALICE_LINES, portrait:true},
   duck:   {title:'The Ugly Duckling',    sub:'four seasons · anime',   thumb:'art4/poster.jpg',       pos:'center 40%',  words:WORD_DUCK,   run:runDuck,   lines:DUCK_LINES,  portrait:true},
   momo:   {title:'Momotaro, the Peach Boy', sub:'a sea voyage · cartoon', thumb:'art5/poster.jpg',    pos:'center 38%',  words:WORD_MOMO,   run:runMomo,   lines:MOMO_LINES,  portrait:true},
-  soup:   {title:'Stone Soup',            sub:'sharing · 1950s paint',  thumb:'art6/poster.jpg',       pos:'center 40%',  words:WORD_SOUP,   run:runSoup,   lines:SOUP_LINES,  portrait:true}
+  soup:   {title:'Stone Soup',            sub:'sharing · 1950s paint',  thumb:'art6/poster.jpg',       pos:'center 40%',  words:WORD_SOUP,   run:runSoup,   lines:SOUP_LINES,  portrait:true},
+  bed:    {title:'Five in the Bed',       sub:'a counting song · 3D',   thumb:'art7/five.jpg',         pos:'center 40%',  words:WORD_BED,    run:runBed,    lines:BED_LINES,   portrait:true}
 };
 let STORY = 'pigs';
 function buildStoryPicker(){
@@ -2671,6 +3048,8 @@ function runActive(){
   $('speaker').classList.toggle('on', !!st.portrait);
   $('bar').classList.toggle('hasFace', !!st.portrait);
   if(!st.portrait) stopVideo();
+  Music.band = false;                  // the thinning band belongs to Five in the Bed alone
+  if(STORY !== 'bed') stopPlates();
   goTo('sStory');
   st.run();
 }
